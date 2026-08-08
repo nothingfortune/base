@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Conventions for this repository. Read before making changes.
+This is a template base repo, this file needs to be updated to match specific project needs.
 
 ## Project
 
