@@ -337,7 +337,9 @@ The repo currently carries leftovers from a prior project (`dollyVision`).
 3. **Drop the `bin/build-wpe.sh` WP Engine comment**, keeping `build/` generic.
 4. **`README.md` currently reads `# dollyVision`.** Replace with the template
    README.
-5. **Remove the tracked `.DS_Store` files** at the repo root and in `docs/`.
+5. **Delete the on-disk `.DS_Store` files** at the repo root and in `docs/`.
+   They are untracked and already ignored, so this is local housekeeping only —
+   no git history to clean.
 6. **`.env.local` is empty and gitignored** — leave it, it is harmless and
    signals where local config goes.
 
