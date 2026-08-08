@@ -25,35 +25,37 @@
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `.nvmrc` | Single source of truth for Node version |
-| `package.json` | Scripts, deps, ESM declaration |
-| `tsconfig.json` | Strict type checking, bundler-friendly module resolution |
-| `vitest.config.ts` | Scopes Vitest to `tests/unit/**` so `tests/e2e/` stays free |
-| `eslint.config.js` | Flat config, type-aware rules, Prettier conflict disable |
-| `.prettierrc` / `.prettierignore` | Formatting rules and exclusions |
-| `.editorconfig` | Editor-agnostic whitespace baseline |
-| `.gitignore` | Rewritten: deduped, `.vscode` negation, generic `build/` |
-| `.vscode/settings.json` / `extensions.json` | Shared editor behavior and recommendations |
-| `.github/workflows/ci.yml` | Runs `npm run check` |
-| `.github/pull_request_template.md` | PR checklist |
-| `src/index.ts` | Placeholder entry point, deleted per project |
-| `tests/unit/index.test.ts` | Proves the test leg is wired |
-| `CLAUDE.md` | Agent conventions: layout, TS rules, testing, CI |
-| `README.md` | Template usage checklist |
-| `LICENSE` | MIT |
+| File                                        | Responsibility                                              |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| `.nvmrc`                                    | Single source of truth for Node version                     |
+| `package.json`                              | Scripts, deps, ESM declaration                              |
+| `tsconfig.json`                             | Strict type checking, bundler-friendly module resolution    |
+| `vitest.config.ts`                          | Scopes Vitest to `tests/unit/**` so `tests/e2e/` stays free |
+| `eslint.config.js`                          | Flat config, type-aware rules, Prettier conflict disable    |
+| `.prettierrc` / `.prettierignore`           | Formatting rules and exclusions                             |
+| `.editorconfig`                             | Editor-agnostic whitespace baseline                         |
+| `.gitignore`                                | Rewritten: deduped, `.vscode` negation, generic `build/`    |
+| `.vscode/settings.json` / `extensions.json` | Shared editor behavior and recommendations                  |
+| `.github/workflows/ci.yml`                  | Runs `npm run check`                                        |
+| `.github/pull_request_template.md`          | PR checklist                                                |
+| `src/index.ts`                              | Placeholder entry point, deleted per project                |
+| `tests/unit/index.test.ts`                  | Proves the test leg is wired                                |
+| `CLAUDE.md`                                 | Agent conventions: layout, TS rules, testing, CI            |
+| `README.md`                                 | Template usage checklist                                    |
+| `LICENSE`                                   | MIT                                                         |
 
 ---
 
 ### Task 1: Node pin and package manifest
 
 **Files:**
+
 - Create: `.nvmrc`
 - Create: `package.json`
 - Create: `package-lock.json` (generated)
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: npm scripts `typecheck`, `lint`, `lint:fix`, `format`, `format:check`, `test`, `test:watch`, `check`. All later tasks rely on these exact names. Installed binaries `tsc`, `eslint`, `prettier`, `vitest` become available to later tasks.
 
@@ -121,12 +123,14 @@ git commit -m "Add Node pin, package manifest, and dev toolchain"
 ### Task 2: Strict TypeScript config, entry point, and first test
 
 **Files:**
+
 - Create: `tsconfig.json`
 - Create: `vitest.config.ts`
 - Create: `src/index.ts`
 - Test: `tests/unit/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `npm run typecheck`, `npm test` from Task 1
 - Produces: `greet(name: string): string` exported from `src/index.ts`. Task 10 deletes it; nothing else depends on it.
 
@@ -246,11 +250,13 @@ git commit -m "Add strict TypeScript config, entry point, and unit test setup"
 ### Task 3: Prettier and editor whitespace baseline
 
 **Files:**
+
 - Create: `.prettierrc`
 - Create: `.prettierignore`
 - Create: `.editorconfig`
 
 **Interfaces:**
+
 - Consumes: `npm run format`, `npm run format:check` from Task 1
 - Produces: a formatted working tree that `format:check` passes on
 
@@ -324,9 +330,11 @@ git commit -m "Add Prettier config and editor whitespace baseline"
 ### Task 4: ESLint flat config with type-aware rules
 
 **Files:**
+
 - Create: `eslint.config.js`
 
 **Interfaces:**
+
 - Consumes: `npm run lint` from Task 1, `tsconfig.json` from Task 2 (via `projectService`)
 - Produces: a lint-clean tree
 
@@ -413,9 +421,11 @@ git commit -m "Add ESLint flat config with type-aware rules"
 ### Task 5: Verify the composite gate
 
 **Files:**
+
 - Modify: none (verification only)
 
 **Interfaces:**
+
 - Consumes: all four legs from Tasks 2–4
 - Produces: confidence that `npm run check` fails for each distinct failure class
 
@@ -487,12 +497,14 @@ Expected: `check` exits 0 and `git status --porcelain` prints nothing (no stray 
 ### Task 6: Standard folder structure
 
 **Files:**
+
 - Create: `src/lib/.gitkeep`, `src/types/.gitkeep`, `src/config/.gitkeep`
 - Create: `tests/e2e/.gitkeep`
 - Create: `bin/.gitkeep`, `scripts/.gitkeep`
 - Create: `docs/guides/.gitkeep`, `docs/toDo/completed/.gitkeep`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: the directory contract documented in `CLAUDE.md` (Task 8)
 
@@ -534,11 +546,13 @@ git commit -m "Add standard folder structure"
 ### Task 7: Git ignore rewrite and shared editor settings
 
 **Files:**
+
 - Modify: `.gitignore` (full rewrite)
 - Create: `.vscode/settings.json`
 - Create: `.vscode/extensions.json`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: a `.gitignore` that ignores `.vscode/*` except the two shared files
 
@@ -646,15 +660,17 @@ Expected: `check` exits 0 before committing.
 ### Task 8: Agent conventions in CLAUDE.md
 
 **Files:**
+
 - Create: `CLAUDE.md`
 
 **Interfaces:**
+
 - Consumes: script names from Task 1, folder structure from Task 6
 - Produces: the testing and CI rules every derived project inherits
 
 - [ ] **Step 1: Create `CLAUDE.md`**
 
-````markdown
+```markdown
 # CLAUDE.md
 
 Conventions for this repository. Read before making changes.
@@ -667,29 +683,29 @@ Conventions for this repository. Read before making changes.
 
 `npm run check` is the gate. It must pass before you claim work is done.
 
-| Command | Purpose |
-| --- | --- |
-| `npm run check` | typecheck + lint + format check + tests |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` / `npm run lint:fix` | ESLint |
-| `npm run format` / `npm run format:check` | Prettier |
-| `npm test` / `npm run test:watch` | Vitest |
+| Command                                   | Purpose                                 |
+| ----------------------------------------- | --------------------------------------- |
+| `npm run check`                           | typecheck + lint + format check + tests |
+| `npm run typecheck`                       | `tsc --noEmit`                          |
+| `npm run lint` / `npm run lint:fix`       | ESLint                                  |
+| `npm run format` / `npm run format:check` | Prettier                                |
+| `npm test` / `npm run test:watch`         | Vitest                                  |
 
 ## Layout
 
-| Path | Contents |
-| --- | --- |
-| `src/` | Application code. Entry point is `src/index.ts`. |
-| `src/lib/` | Reusable logic with no framework or IO coupling. |
-| `src/types/` | Types shared across modules. Types used in one module stay in that module. |
-| `src/config/` | Configuration loading and environment parsing. |
-| `tests/unit/` | Vitest specs, mirroring `src/` paths. |
-| `tests/e2e/` | Playwright specs. Not installed by default. |
-| `bin/` | Shell scripts (deploy, build helpers). |
-| `scripts/` | Repo-local Node/TS tooling. |
-| `docs/designs/` | Design docs, named `YYYY-MM-DD-topic-design.md`. |
-| `docs/guides/` | How-to documentation. |
-| `docs/toDo/` | Active plans. Move to `docs/toDo/completed/` when finished. |
+| Path            | Contents                                                                   |
+| --------------- | -------------------------------------------------------------------------- |
+| `src/`          | Application code. Entry point is `src/index.ts`.                           |
+| `src/lib/`      | Reusable logic with no framework or IO coupling.                           |
+| `src/types/`    | Types shared across modules. Types used in one module stay in that module. |
+| `src/config/`   | Configuration loading and environment parsing.                             |
+| `tests/unit/`   | Vitest specs, mirroring `src/` paths.                                      |
+| `tests/e2e/`    | Playwright specs. Not installed by default.                                |
+| `bin/`          | Shell scripts (deploy, build helpers).                                     |
+| `scripts/`      | Repo-local Node/TS tooling.                                                |
+| `docs/designs/` | Design docs, named `YYYY-MM-DD-topic-design.md`.                           |
+| `docs/guides/`  | How-to documentation.                                                      |
+| `docs/toDo/`    | Active plans. Move to `docs/toDo/completed/` when finished.                |
 
 ## TypeScript
 
@@ -726,7 +742,7 @@ Conventions for this repository. Read before making changes.
 - **Pure Node ESM (CLI, server):** set `"module": "nodenext"` and `"moduleResolution": "nodenext"`. Relative imports then require `.js` extensions.
 - **Package that ships JS:** set `"noEmit": false`, add `"outDir": "dist"`, and add a `"build": "tsc"` script.
 - **Browser / DOM code:** set `"lib": ["ES2023", "DOM", "DOM.Iterable"]`.
-````
+```
 
 - [ ] **Step 2: Verify the gate still passes**
 
@@ -745,10 +761,12 @@ git commit -m "Add agent conventions covering layout, testing, and CI"
 ### Task 9: CI workflow and PR template
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 - Create: `.github/pull_request_template.md`
 
 **Interfaces:**
+
 - Consumes: `npm run check` from Task 1, `.nvmrc` from Task 1, `package-lock.json` from Task 1
 - Produces: the CI contract described in `CLAUDE.md`
 
@@ -828,10 +846,12 @@ git commit -m "Add CI workflow and pull request template"
 ### Task 10: README, LICENSE, and final verification
 
 **Files:**
+
 - Modify: `README.md` (full rewrite — currently reads `# dollyVision`)
 - Create: `LICENSE`
 
 **Interfaces:**
+
 - Consumes: everything above
 - Produces: the finished template
 
@@ -890,16 +910,16 @@ npm run check
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `npm run check` | The gate: typecheck, lint, format check, tests |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | ESLint |
-| `npm run lint:fix` | ESLint with autofix |
-| `npm run format` | Prettier, writing changes |
-| `npm run format:check` | Prettier, check only |
-| `npm test` | Vitest, single run |
-| `npm run test:watch` | Vitest, watch mode |
+| Command                | Purpose                                        |
+| ---------------------- | ---------------------------------------------- |
+| `npm run check`        | The gate: typecheck, lint, format check, tests |
+| `npm run typecheck`    | `tsc --noEmit`                                 |
+| `npm run lint`         | ESLint                                         |
+| `npm run lint:fix`     | ESLint with autofix                            |
+| `npm run format`       | Prettier, writing changes                      |
+| `npm run format:check` | Prettier, check only                           |
+| `npm test`             | Vitest, single run                             |
+| `npm run test:watch`   | Vitest, watch mode                             |
 
 ## Layout
 

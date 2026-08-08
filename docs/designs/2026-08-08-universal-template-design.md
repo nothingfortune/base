@@ -30,15 +30,15 @@ ships in the template. Non-TS projects delete about six files on day one.
 
 ## Decisions
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Template scope | Process layer + strict TS baseline + standard folders | Matches the common case; the minority case is a small delete |
-| Folder layout | Structured `src/` + separate `tests/` | Chosen for up-front guidance over minimal surface |
-| Lint + format | ESLint (flat config) + Prettier | Plugin ecosystem matters for React/Next/WP-flavored projects |
-| Tests | Vitest for unit; Playwright slot reserved, not installed | Playwright is a heavy install most projects skip |
-| Package manager | npm, committed `package-lock.json` | Default, no extra install step for collaborators |
-| Module system | ESM (`"type": "module"`) | Current default for new work |
-| License | MIT, placeholder holder/year | Permissive default; swap per project |
+| Decision        | Choice                                                   | Rationale                                                    |
+| --------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| Template scope  | Process layer + strict TS baseline + standard folders    | Matches the common case; the minority case is a small delete |
+| Folder layout   | Structured `src/` + separate `tests/`                    | Chosen for up-front guidance over minimal surface            |
+| Lint + format   | ESLint (flat config) + Prettier                          | Plugin ecosystem matters for React/Next/WP-flavored projects |
+| Tests           | Vitest for unit; Playwright slot reserved, not installed | Playwright is a heavy install most projects skip             |
+| Package manager | npm, committed `package-lock.json`                       | Default, no extra install step for collaborators             |
+| Module system   | ESM (`"type": "module"`)                                 | Current default for new work                                 |
+| License         | MIT, placeholder holder/year                             | Permissive default; swap per project                         |
 
 ## File tree
 
@@ -360,13 +360,13 @@ Plus a scripts table and a one-paragraph layout overview.
 
 ## Deliberately excluded
 
-| Excluded | Why |
-|---|---|
-| Husky / lint-staged | Adds an install-time hook to every clone to enforce what CI already blocks. Easiest to add back if pre-commit friction is wanted. |
-| commitlint / conventional commits | Ceremony without payoff absent release automation. |
-| Changesets / semantic-release | Most of these projects are apps, not published packages. |
-| Dockerfile | Deployment targets vary too much for a useful default. |
-| Playwright dependency | Heavy install; the `tests/e2e/` slot is reserved instead. |
+| Excluded                          | Why                                                                                                                               |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Husky / lint-staged               | Adds an install-time hook to every clone to enforce what CI already blocks. Easiest to add back if pre-commit friction is wanted. |
+| commitlint / conventional commits | Ceremony without payoff absent release automation.                                                                                |
+| Changesets / semantic-release     | Most of these projects are apps, not published packages.                                                                          |
+| Dockerfile                        | Deployment targets vary too much for a useful default.                                                                            |
+| Playwright dependency             | Heavy install; the `tests/e2e/` slot is reserved instead.                                                                         |
 
 ## Verification
 

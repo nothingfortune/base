@@ -1,0 +1,32 @@
+# === Environment & secrets ===
+.env
+.env.local
+.env.*.local
+.env.deploy
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === OS / IDE files ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.code-workspace
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/
+
+# === Build artifacts ===
+node_modules/
+dist/
+# bin/build-wpe.sh output (flattened WP-root tree for deploy)
+build/
+
+# === Logs ===
+*.log
