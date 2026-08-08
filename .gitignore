@@ -8,25 +8,25 @@
 .DS_Store
 Thumbs.db
 
-# === OS / IDE files ===
-.DS_Store
-Thumbs.db
+# === Editors ===
 *.swp
 *.swo
 .idea/
-.vscode/
 *.code-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 
-# Playwright
+# === Dependencies & build artifacts ===
+node_modules/
+dist/
+build/
+coverage/
+
+# === Test output ===
 /playwright-report/
 /test-results/
 /blob-report/
-
-# === Build artifacts ===
-node_modules/
-dist/
-# bin/build-wpe.sh output (flattened WP-root tree for deploy)
-build/
 
 # === Logs ===
 *.log
