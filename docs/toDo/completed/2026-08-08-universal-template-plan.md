@@ -59,13 +59,13 @@
 - Consumes: nothing
 - Produces: npm scripts `typecheck`, `lint`, `lint:fix`, `format`, `format:check`, `test`, `test:watch`, `check`. All later tasks rely on these exact names. Installed binaries `tsc`, `eslint`, `prettier`, `vitest` become available to later tasks.
 
-- [ ] **Step 1: Create `.nvmrc`**
+- [x] **Step 1: Create `.nvmrc`**
 
 ```
 24
 ```
 
-- [ ] **Step 2: Create `package.json`**
+- [x] **Step 2: Create `package.json`**
 
 ```json
 {
@@ -89,7 +89,7 @@
 }
 ```
 
-- [ ] **Step 3: Install the eight dev dependencies**
+- [x] **Step 3: Install the eight dev dependencies**
 
 Run:
 
@@ -99,19 +99,19 @@ npm install --save-dev typescript eslint @eslint/js typescript-eslint eslint-con
 
 Expected: exits 0, creates `node_modules/` and `package-lock.json`.
 
-- [ ] **Step 4: Verify the toolchain binaries resolve**
+- [x] **Step 4: Verify the toolchain binaries resolve**
 
 Run: `npx tsc --version && npx eslint --version && npx prettier --version && npx vitest --version`
 Expected: four version strings, exit 0.
 
-- [ ] **Step 5: Verify exactly eight dev dependencies**
+- [x] **Step 5: Verify exactly eight dev dependencies**
 
 Run: `node --input-type=commonjs -p "Object.keys(require('./package.json').devDependencies).length"`
 Expected: `8`
 
 (`--input-type=commonjs` is required because `package.json` declares `"type": "module"`.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .nvmrc package.json package-lock.json
@@ -134,7 +134,7 @@ git commit -m "Add Node pin, package manifest, and dev toolchain"
 - Consumes: `npm run typecheck`, `npm test` from Task 1
 - Produces: `greet(name: string): string` exported from `src/index.ts`. Task 10 deletes it; nothing else depends on it.
 
-- [ ] **Step 1: Create `tsconfig.json`**
+- [x] **Step 1: Create `tsconfig.json`**
 
 ```json
 {
@@ -167,7 +167,7 @@ git commit -m "Add Node pin, package manifest, and dev toolchain"
 
 Note: `noUnusedLocals` and `noUnusedParameters` are deliberately absent — they live in ESLint (Task 4).
 
-- [ ] **Step 2: Create `vitest.config.ts`**
+- [x] **Step 2: Create `vitest.config.ts`**
 
 ```ts
 import { defineConfig } from 'vitest/config';
@@ -180,7 +180,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 Create `tests/unit/index.test.ts`:
 
@@ -196,14 +196,14 @@ describe('greet', () => {
 });
 ```
 
-- [ ] **Step 4: Run the test to verify it fails**
+- [x] **Step 4: Run the test to verify it fails**
 
 Run: `npm test`
 Expected: FAIL — cannot resolve `../../src/index`.
 
 (Extensionless is correct here because `moduleResolution` is `bundler`. If you later switch the project to `nodenext` per `CLAUDE.md`, relative imports gain `.js` extensions.)
 
-- [ ] **Step 5: Write the minimal implementation**
+- [x] **Step 5: Write the minimal implementation**
 
 Create `src/index.ts`:
 
@@ -214,17 +214,17 @@ export function greet(name: string): string {
 }
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `npm test`
 Expected: PASS, 1 test.
 
-- [ ] **Step 7: Verify typecheck passes**
+- [x] **Step 7: Verify typecheck passes**
 
 Run: `npm run typecheck`
 Expected: exit 0, no output.
 
-- [ ] **Step 8: Prove the strict flags are actually engaged**
+- [x] **Step 8: Prove the strict flags are actually engaged**
 
 Temporarily append to `src/index.ts`:
 
@@ -238,7 +238,7 @@ Expected: FAIL with `Type 'string | undefined' is not assignable to type 'string
 
 Then delete those two lines and re-run `npm run typecheck`. Expected: exit 0.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add tsconfig.json vitest.config.ts src/index.ts tests/unit/index.test.ts
@@ -260,7 +260,7 @@ git commit -m "Add strict TypeScript config, entry point, and unit test setup"
 - Consumes: `npm run format`, `npm run format:check` from Task 1
 - Produces: a formatted working tree that `format:check` passes on
 
-- [ ] **Step 1: Create `.prettierrc`**
+- [x] **Step 1: Create `.prettierrc`**
 
 ```json
 {
@@ -272,7 +272,7 @@ git commit -m "Add strict TypeScript config, entry point, and unit test setup"
 }
 ```
 
-- [ ] **Step 2: Create `.prettierignore`**
+- [x] **Step 2: Create `.prettierignore`**
 
 ```
 dist/
@@ -283,7 +283,7 @@ package-lock.json
 .gitkeep
 ```
 
-- [ ] **Step 3: Create `.editorconfig`**
+- [x] **Step 3: Create `.editorconfig`**
 
 ```ini
 root = true
@@ -300,12 +300,12 @@ trim_trailing_whitespace = true
 trim_trailing_whitespace = false
 ```
 
-- [ ] **Step 4: Format the tree, then verify the check passes**
+- [x] **Step 4: Format the tree, then verify the check passes**
 
 Run: `npm run format && npm run format:check`
 Expected: format rewrites any non-conforming files; `format:check` then exits 0 with "All matched files use Prettier code style!".
 
-- [ ] **Step 5: Prove the format leg actually fails on bad input**
+- [x] **Step 5: Prove the format leg actually fails on bad input**
 
 Run:
 
@@ -318,7 +318,7 @@ Expected: FAIL, listing `src/scratch.ts`.
 
 Then run `rm src/scratch.ts && npm run format:check`. Expected: exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .prettierrc .prettierignore .editorconfig
@@ -338,7 +338,7 @@ git commit -m "Add Prettier config and editor whitespace baseline"
 - Consumes: `npm run lint` from Task 1, `tsconfig.json` from Task 2 (via `projectService`)
 - Produces: a lint-clean tree
 
-- [ ] **Step 1: Create `eslint.config.js`**
+- [x] **Step 1: Create `eslint.config.js`**
 
 ```js
 import js from '@eslint/js';
@@ -370,12 +370,12 @@ export default tseslint.config(
 );
 ```
 
-- [ ] **Step 2: Run lint to verify a clean tree**
+- [x] **Step 2: Run lint to verify a clean tree**
 
 Run: `npm run lint`
 Expected: exit 0, no output.
 
-- [ ] **Step 3: Prove type-aware linting is actually running**
+- [x] **Step 3: Prove type-aware linting is actually running**
 
 A floating promise is invisible to plain syntactic linting — it can only be caught with type information. Create `src/scratch.ts`:
 
@@ -388,7 +388,7 @@ export function leak(): void {
 Run: `npm run lint`
 Expected: FAIL with `@typescript-eslint/no-floating-promises`. This confirms `projectService` resolved the tsconfig.
 
-- [ ] **Step 4: Prove unused-variable enforcement lives in ESLint**
+- [x] **Step 4: Prove unused-variable enforcement lives in ESLint**
 
 Replace `src/scratch.ts` with:
 
@@ -404,12 +404,12 @@ Expected: FAIL with `@typescript-eslint/no-unused-vars` for `dead`.
 
 Then run `npm run typecheck`. Expected: exit 0 — proving unused variables fail lint but do not block typecheck, which is the intended split.
 
-- [ ] **Step 5: Clean up and re-verify**
+- [x] **Step 5: Clean up and re-verify**
 
 Run: `rm src/scratch.ts && npm run lint`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add eslint.config.js
@@ -429,12 +429,12 @@ git commit -m "Add ESLint flat config with type-aware rules"
 - Consumes: all four legs from Tasks 2–4
 - Produces: confidence that `npm run check` fails for each distinct failure class
 
-- [ ] **Step 1: Verify the gate passes clean**
+- [x] **Step 1: Verify the gate passes clean**
 
 Run: `npm run check`
 Expected: exit 0, all four legs run in order.
 
-- [ ] **Step 2: Verify the typecheck leg blocks the gate**
+- [x] **Step 2: Verify the typecheck leg blocks the gate**
 
 Run:
 
@@ -445,7 +445,7 @@ npm run check
 
 Expected: FAIL at the typecheck leg; lint/format/test never run.
 
-- [ ] **Step 3: Verify the lint leg blocks the gate**
+- [x] **Step 3: Verify the lint leg blocks the gate**
 
 Run:
 
@@ -456,7 +456,7 @@ npm run check
 
 Expected: typecheck passes, FAIL at the lint leg.
 
-- [ ] **Step 4: Verify the format leg blocks the gate**
+- [x] **Step 4: Verify the format leg blocks the gate**
 
 Run:
 
@@ -467,7 +467,7 @@ npm run check
 
 Expected: typecheck and lint pass, FAIL at the format leg.
 
-- [ ] **Step 5: Verify the test leg blocks the gate**
+- [x] **Step 5: Verify the test leg blocks the gate**
 
 Run:
 
@@ -480,7 +480,7 @@ npm run check
 
 Expected: typecheck, lint, and format pass; FAIL at the test leg.
 
-- [ ] **Step 6: Clean up and confirm green**
+- [x] **Step 6: Clean up and confirm green**
 
 Run:
 
@@ -508,7 +508,7 @@ Expected: `check` exits 0 and `git status --porcelain` prints nothing (no stray 
 - Consumes: nothing
 - Produces: the directory contract documented in `CLAUDE.md` (Task 8)
 
-- [ ] **Step 1: Create every directory with a `.gitkeep`**
+- [x] **Step 1: Create every directory with a `.gitkeep`**
 
 Run:
 
@@ -518,7 +518,7 @@ for d in src/lib src/types src/config tests/e2e bin scripts docs/guides docs/toD
 done
 ```
 
-- [ ] **Step 2: Verify git will actually track them**
+- [x] **Step 2: Verify git will actually track them**
 
 Run:
 
@@ -529,12 +529,12 @@ git status --porcelain | grep -c '\.gitkeep'
 
 Expected: `8`
 
-- [ ] **Step 3: Verify the gate still passes**
+- [x] **Step 3: Verify the gate still passes**
 
 Run: `npm run check`
 Expected: exit 0. (`.gitkeep` is in `.prettierignore`, so the format leg ignores the empty files.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
@@ -556,7 +556,7 @@ git commit -m "Add standard folder structure"
 - Consumes: nothing
 - Produces: a `.gitignore` that ignores `.vscode/*` except the two shared files
 
-- [ ] **Step 1: Replace `.gitignore` entirely**
+- [x] **Step 1: Replace `.gitignore` entirely**
 
 The current file ignores `.vscode/` wholesale, duplicates the OS block, and carries a WP Engine-specific comment. Replace all contents with:
 
@@ -595,7 +595,7 @@ coverage/
 *.log
 ```
 
-- [ ] **Step 2: Create `.vscode/settings.json`**
+- [x] **Step 2: Create `.vscode/settings.json`**
 
 ```json
 {
@@ -609,7 +609,7 @@ coverage/
 }
 ```
 
-- [ ] **Step 3: Create `.vscode/extensions.json`**
+- [x] **Step 3: Create `.vscode/extensions.json`**
 
 ```json
 {
@@ -621,7 +621,7 @@ coverage/
 }
 ```
 
-- [ ] **Step 4: Verify the negation works**
+- [x] **Step 4: Verify the negation works**
 
 Run:
 
@@ -639,13 +639,13 @@ git check-ignore -v .DS_Store node_modules
 
 Expected: both reported as ignored.
 
-- [ ] **Step 5: Delete the stray `.DS_Store` files**
+- [x] **Step 5: Delete the stray `.DS_Store` files**
 
 Run: `rm -f .DS_Store docs/.DS_Store`
 
 These are untracked and already ignored, so this is local housekeeping only.
 
-- [ ] **Step 6: Verify the gate still passes, then commit**
+- [x] **Step 6: Verify the gate still passes, then commit**
 
 ```bash
 npm run check
@@ -668,7 +668,7 @@ Expected: `check` exits 0 before committing.
 - Consumes: script names from Task 1, folder structure from Task 6
 - Produces: the testing and CI rules every derived project inherits
 
-- [ ] **Step 1: Create `CLAUDE.md`**
+- [x] **Step 1: Create `CLAUDE.md`**
 
 ```markdown
 # CLAUDE.md
@@ -744,12 +744,12 @@ Conventions for this repository. Read before making changes.
 - **Browser / DOM code:** set `"lib": ["ES2023", "DOM", "DOM.Iterable"]`.
 ```
 
-- [ ] **Step 2: Verify the gate still passes**
+- [x] **Step 2: Verify the gate still passes**
 
 Run: `npm run check`
 Expected: exit 0. If the format leg rewrites `CLAUDE.md` table spacing, run `npm run format` and re-run.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add CLAUDE.md
@@ -770,7 +770,7 @@ git commit -m "Add agent conventions covering layout, testing, and CI"
 - Consumes: `npm run check` from Task 1, `.nvmrc` from Task 1, `package-lock.json` from Task 1
 - Produces: the CI contract described in `CLAUDE.md`
 
-- [ ] **Step 1: Create `.github/workflows/ci.yml`**
+- [x] **Step 1: Create `.github/workflows/ci.yml`**
 
 ```yaml
 name: CI
@@ -796,7 +796,7 @@ jobs:
       - run: npm run check
 ```
 
-- [ ] **Step 2: Create `.github/pull_request_template.md`**
+- [x] **Step 2: Create `.github/pull_request_template.md`**
 
 ```markdown
 ## Summary
@@ -818,7 +818,7 @@ jobs:
 - [ ] Docs updated if behavior or setup changed
 ```
 
-- [ ] **Step 3: Verify the workflow YAML parses**
+- [x] **Step 3: Verify the workflow YAML parses**
 
 Run:
 
@@ -828,12 +828,12 @@ node --input-type=commonjs -e "const f=require('fs').readFileSync('.github/workf
 
 Expected: `ci.yml contract OK`
 
-- [ ] **Step 4: Verify `npm ci` works from the committed lockfile**
+- [x] **Step 4: Verify `npm ci` works from the committed lockfile**
 
 Run: `npm ci`
 Expected: exit 0. This is the exact command CI runs; if the lockfile is missing or stale it fails here rather than in CI.
 
-- [ ] **Step 5: Verify the gate still passes, then commit**
+- [x] **Step 5: Verify the gate still passes, then commit**
 
 ```bash
 npm run check
@@ -855,7 +855,7 @@ git commit -m "Add CI workflow and pull request template"
 - Consumes: everything above
 - Produces: the finished template
 
-- [ ] **Step 1: Create `LICENSE` (MIT)**
+- [x] **Step 1: Create `LICENSE` (MIT)**
 
 ```
 MIT License
@@ -881,7 +881,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-- [ ] **Step 2: Replace `README.md` entirely**
+- [x] **Step 2: Replace `README.md` entirely**
 
 ````markdown
 # base
@@ -936,12 +936,12 @@ Conventions — including testing and CI rules — are documented in `CLAUDE.md`
 MIT
 ````
 
-- [ ] **Step 3: Run the full gate**
+- [x] **Step 3: Run the full gate**
 
 Run: `npm run format && npm run check`
 Expected: exit 0.
 
-- [ ] **Step 4: Verify every planned path is tracked by git**
+- [x] **Step 4: Verify every planned path is tracked by git**
 
 Run:
 
@@ -961,7 +961,7 @@ echo "path audit done"
 
 Expected: no `MISSING:` lines before `path audit done`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -971,7 +971,7 @@ git commit -m "Add README and MIT license"
 This must happen before the clone check below — `git clone` copies committed
 history only, so verifying an uncommitted tree would test the wrong thing.
 
-- [ ] **Step 6: Verify a clean clone passes the gate**
+- [x] **Step 6: Verify a clean clone passes the gate**
 
 Run:
 
@@ -983,7 +983,7 @@ rm -rf /tmp/base-verify && git clone -q . /tmp/base-verify \
 
 Expected: `CLEAN CLONE OK`. This is the spec's headline acceptance criterion — a fresh clone is productive after one install.
 
-- [ ] **Step 7: Move this plan to completed**
+- [x] **Step 7: Move this plan to completed**
 
 ```bash
 git mv docs/toDo/2026-08-08-universal-template-plan.md docs/toDo/completed/
