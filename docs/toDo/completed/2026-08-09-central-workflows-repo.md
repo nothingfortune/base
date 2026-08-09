@@ -2,8 +2,9 @@
 
 > **CLOSED 2026-08-09.** Phases 1 and 2 shipped in full:
 > `nothingfortune/workflows` v1 (pin `1f28f5a`) serves ci / e2e /
-> deploy-design-preview / dependabot-automerge / docker-image to base and
-> dollyVision; preflight hook + ci-budget guide are template-vendored here.
+> deploy-design-preview / dependabot-automerge to base and dollyVision,
+> plus docker-image (dollyVision only — base has no container to build);
+> preflight hook + ci-budget guide are template-vendored here.
 > The Backlog section below is parked, not done — pull items into a fresh
 > todo when wanted.
 
@@ -40,7 +41,7 @@ dependabot updates them everywhere).
 
 ## Phase 2 — discovered candidates (from dollyVision + outerReach)
 
-- [x] **`dependabot-auto-merge.yml`** (outerReach, near-verbatim reusable):
+- [x] **`dependabot-automerge.yml`** (outerReach, near-verbatim reusable):
       auto-merge patch/minor everywhere + dev-only majors; prod majors get
       labeled for a human. NOTE: only meaningful with branch protection —
       auto-merge waits on _required_ checks.
@@ -53,8 +54,9 @@ dependabot updates them everywhere).
       `smoke_command`; build + artifact smoke on PRs, GHCR push (latest +
       sha) on main via `GITHUB_TOKEN`.
 - [x] **Pre-push preflight** (outerReach pattern, slimmed for base):
-      `.githooks/pre-push` running `npm run check` (tiered: e2e only when
-      the diff touches covered code; `--no-verify` bypass), wired via
+      `.githooks/pre-push` running `npm run check` (`--no-verify` bypass)
+      — the diff-sensitive e2e tier did NOT ship; it moved to the Backlog
+      below — wired via
       `git config core.hooksPath .githooks` — saves the CI round-trip on
       doomed pushes. Template-vendored in `base`, not a workflow.
 - [x] **`docs/guides/ci-budget.md`** (outerReach): port the
@@ -62,6 +64,10 @@ dependabot updates them everywhere).
       `base` — it's the WHY behind the e2e + review-loop mechanics.
 
 ## Backlog (worth a look, not yet)
+
+- [ ] Diff-sensitive e2e preflight tier: pre-push additionally runs the
+      project's e2e when the diff touches covered code (the hook today
+      runs only `npm run check`, which never invokes e2e).
 
 - [ ] `check-security-headers.sh` + lib (outerReach): live-URL header
       assertion with the CF-403 browser-UA lesson baked in — generic with a
