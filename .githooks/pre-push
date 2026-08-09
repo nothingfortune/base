@@ -21,5 +21,21 @@ if [ "$gated" -eq 0 ]; then
   exit 0
 fi
 
+# The gate runs against the working tree, which is only a proxy for the
+# pushed commit when tracked files have drifted from HEAD. Surface that
+# drift loudly: uncommitted fixes would green-light a red commit (and
+# usually mean a forgotten `git commit`), while unrelated edits can block
+# a valid one. Either way the verdict below is about the TREE — CI on the
+# pushed commit stays the authority.
+drift="$(git status --porcelain --untracked-files=no)"
+if [ -n "$drift" ]; then
+  {
+    echo "pre-push: WARNING — working tree differs from the commit being pushed:"
+    echo "$drift" | sed 's/^/pre-push:   /'
+    echo "pre-push: the gate validates the tree, not the commit. Forgot to commit?"
+    echo "pre-push: (--no-verify skips the gate if these edits wrongly block you)"
+  } >&2
+fi
+
 echo "pre-push: npm run check (bypass with --no-verify)" >&2
 npm run check
