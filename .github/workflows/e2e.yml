@@ -15,4 +15,4 @@ concurrency:
 
 jobs:
   e2e:
-    uses: nothingfortune/workflows/.github/workflows/e2e.yml@v1
+    uses: nothingfortune/workflows/.github/workflows/e2e.yml@93eb4896f38d60399fe61a7e4729bbe5ea0420db # v1
