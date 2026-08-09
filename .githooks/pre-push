@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Pre-push gate: run the local suite so a red branch can't be pushed — a
+# broken push burns a CI run and (on ready PRs) a bot review for nothing.
+# Wired automatically by npm install (postinstall sets core.hooksPath).
+# Emergency bypass: git push --no-verify — you own what happens next.
+#
+# The gate validates the CURRENT CHECKOUT (HEAD). Pushing a ref that isn't
+# HEAD (git push origin other-branch) can't be validated from here, so it
+# is allowed through with a warning rather than green-lit by the wrong tree.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+head="$(git rev-parse HEAD)"
+gated=0
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  [ "$local_sha" = "$head" ] && gated=1
+done
+
+if [ "$gated" -eq 0 ]; then
+  echo "pre-push: pushed ref is not the current checkout — skipping the local gate (CI still covers it)." >&2
+  exit 0
+fi
+
+echo "pre-push: npm run check (bypass with --no-verify)" >&2
+npm run check

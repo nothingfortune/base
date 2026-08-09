@@ -94,6 +94,10 @@ This is a template base repo, this file needs to be updated to match specific pr
 - Secrets come from GitHub repository secrets. Never commit `.env*` files.
 - Do not claim work passes because it looks correct. Run `npm run check` and
   read the output.
+- The pre-push hook (`.githooks/pre-push`, wired by `npm install`) runs the
+  gate before every push — see `docs/guides/ci-budget.md` for the full
+  spend model (work in drafts, mark ready once). Bypass only with
+  `--no-verify`, and then let CI do the job you skipped.
 
 ## PR review loop
 
