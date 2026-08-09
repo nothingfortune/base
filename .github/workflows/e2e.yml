@@ -1,0 +1,57 @@
+name: e2e
+
+# The expensive test layer: Playwright against the BUILT app (never the dev
+# server — production-only bundling/base-path failures must not slip
+# through). Skips on draft PRs, so one run per ready PR instead of per push.
+#
+# GitHub counts a skipped job as satisfying a required check, so run the
+# reviews-done gate as `DRAFT_SKIPPED_CHECK=e2e bin/pr-reviews-done.sh <PR>`
+# — it refuses merge-ready claims that ride a draft-era skip.
+#
+# DORMANT until the project adopts Playwright: every step after the probe is
+# guarded on playwright.config.* existing, so the job is a fast no-op in a
+# fresh template clone and self-activates when e2e lands. Local equivalent:
+# `npm run test:e2e` — the ONE documented exception to "CI runs exactly
+# npm run check".
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect Playwright adoption
+        id: probe
+        run: |
+          if ls playwright.config.* >/dev/null 2>&1; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No playwright.config.* — e2e layer not adopted yet; no-op."
+          fi
+      - if: steps.probe.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - if: steps.probe.outputs.present == 'true'
+        run: npm ci
+      - if: steps.probe.outputs.present == 'true'
+        run: npm run build --if-present
+      - if: steps.probe.outputs.present == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.probe.outputs.present == 'true'
+        run: npm run test:e2e

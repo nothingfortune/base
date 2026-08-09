@@ -1,0 +1,78 @@
+name: Deploy design preview (Cloudflare Pages)
+
+# Publishes a static design suite to Cloudflare Pages whenever its files
+# change (any branch: main -> production URL, other branches -> per-branch
+# preview URL). Manual runs via workflow_dispatch.
+#
+# TEMPLATE SETUP — per project:
+#   1. RENAME the Pages project below (both `pages project create` and
+#      `--project-name`) — e.g. <repo>-design. It is auto-created on first run.
+#   2. Adjust the trigger path if the design suite lives elsewhere.
+#   3. Repo secrets (Settings ▸ Secrets and variables ▸ Actions):
+#        CLOUDFLARE_API_TOKEN   — Account ▸ Cloudflare Pages ▸ Edit
+#        CLOUDFLARE_ACCOUNT_ID  — Cloudflare dashboard (right sidebar)
+# Dormant until the trigger path exists — a paths-filtered workflow never
+# runs when nothing under it changes.
+
+on:
+  push:
+    paths:
+      - 'docs/designs/handoff/**'
+  workflow_dispatch:
+
+concurrency:
+  group: design-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sanitize the ref before it ever touches a shell / the deploy command
+      # (branch names can contain shell metacharacters — injection guard).
+      # Disallowed chars are REPLACED with '-' (not deleted) so distinct refs
+      # like `main!` can't collapse to `main` and deploy over production.
+      - name: Resolve deploy branch
+        id: ref
+        env:
+          RAW_REF: ${{ github.ref_name }}
+        run: |
+          SAFE=$(printf '%s' "$RAW_REF" | LC_ALL=C tr -c 'A-Za-z0-9._/-' '-' | tr -s '-' | cut -c1-100)
+          [ -n "$SAFE" ] || SAFE=main
+          echo "branch=$SAFE" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure Pages project exists
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create RENAME-ME-design --production-branch=main
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy docs/designs/handoff
+            --project-name=RENAME-ME-design
+            --branch=${{ steps.ref.outputs.branch }}
+
+      - name: Report
+        if: always()
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.deployment-url }}
+          REF: ${{ steps.ref.outputs.branch }}
+        run: |
+          {
+            echo "### Design preview deploy"
+            echo "- Project: \`RENAME-ME-design\` · branch \`$REF\`"
+            echo "- URL: $DEPLOY_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
