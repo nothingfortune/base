@@ -17,6 +17,7 @@ This is a template base repo, this file needs to be updated to match specific pr
 | `npm run lint` / `npm run lint:fix`       | ESLint                                  |
 | `npm run format` / `npm run format:check` | Prettier                                |
 | `npm test` / `npm run test:watch`         | Vitest                                  |
+| `npm run test:bin`                        | Bash tests for `bin/` scripts           |
 
 ## Layout
 
@@ -28,7 +29,8 @@ This is a template base repo, this file needs to be updated to match specific pr
 | `src/config/`   | Configuration loading and environment parsing.                             |
 | `tests/unit/`   | Vitest specs, mirroring `src/` paths.                                      |
 | `tests/e2e/`    | Playwright specs. Not installed by default.                                |
-| `bin/`          | Shell scripts (deploy, build helpers).                                     |
+| `bin/`          | Shell scripts (build helpers, AI PR-review loop).                          |
+| `tests/bin/`    | Bash tests for `bin/` scripts, run by `tests/bin/run.sh`.                  |
 | `scripts/`      | Repo-local Node/TS tooling.                                                |
 | `docs/designs/` | Design docs, named `YYYY-MM-DD-topic-design.md`.                           |
 | `docs/guides/`  | How-to documentation.                                                      |
@@ -64,11 +66,27 @@ This is a template base repo, this file needs to be updated to match specific pr
 
 ## CI
 
-- CI runs exactly `npm run check`. Anything CI enforces must be reproducible
-  locally with that command — to add a check, add it to the `check` script, not
-  as a bare workflow step.
-- One workflow file (`.github/workflows/ci.yml`) until there is a concrete
-  reason for a second.
+- CI runs exactly `npm run check` — with ONE sanctioned exception: Playwright
+  e2e is the deliberately expensive layer, run by `e2e.yml` on
+  ready-for-review PRs and main pushes (skipped on drafts; dormant until the
+  project adopts a `playwright.config.*`). Its local equivalent is
+  `npm run test:e2e`. Everything else CI enforces must be reproducible via
+  `check` — to add a check, add it to the `check` script, not as a bare
+  workflow step.
+- Gates run against the BUILT artifact, never dev-server or stale local
+  state: if the project gains a build, `check` runs it before typecheck and
+  tests, and gate fixes are verified from a wiped-clean state (delete
+  dist/build dirs, run `check`) before claiming they work.
+- Every workflow carries a stated reason:
+  - `ci.yml` — the gate: `npm ci` + `npm run check`, every PR + main push.
+  - `e2e.yml` — the expensive layer (above), draft-skipped, self-activating.
+  - `deploy-design-preview.yml` — publishes `docs/designs/handoff/` to
+    Cloudflare Pages (main → production, branches → previews). Dormant until
+    that path exists; per-project setup is documented in the file (rename
+    the Pages project, add `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`).
+- Dependabot (npm + actions, weekly): minors/patches ride CI; a major that
+  fails the gate gets CLOSED with a comment and taken deliberately in a
+  dedicated branch — never merged red, never left rotting open.
 - `.nvmrc` is the single source of truth for the Node version, read via
   `node-version-file`. Never hardcode a version in the workflow.
 - Install with `npm ci`, never `npm install`, in CI. `package-lock.json` is
@@ -76,6 +94,29 @@ This is a template base repo, this file needs to be updated to match specific pr
 - Secrets come from GitHub repository secrets. Never commit `.env*` files.
 - Do not claim work passes because it looks correct. Run `npm run check` and
   read the output.
+
+## PR review loop
+
+AI reviewers (Codex + GitHub Copilot) review PRs. The loop, in order:
+
+1. `bin/await-codex-review.sh [PR]` and `bin/await-copilot-review.sh [PR]` —
+   request (Copilot only; Codex cannot be requested) and poll for reviews.
+   Both print inline findings **and** findings hidden in collapsed
+   "Suppressed comments" blocks, which never appear in the comments API.
+2. Address every finding; reply in each thread
+   (`gh api repos/<repo>/pulls/<pr>/comments/<id>/replies -f body=...`).
+3. `bin/pr-unaddressed.sh [PR]` — exits non-zero while any bot thread lacks
+   our reply. Usable as a gate.
+4. `DRAFT_SKIPPED_CHECK=e2e bin/pr-reviews-done.sh [PR] --lessons "..."` —
+   posts the summary comment. It refuses (exit 3) if threads lack replies,
+   suppressed findings are unacknowledged (`--ack-suppressed` after actually
+   reading them), a takeaway is missing when findings existed, or the
+   named draft-skipped check rode a draft-era skip onto a ready PR.
+   `--lessons` names the testing-strategy change that keeps the bug class
+   from recurring; `"none new: <why>"` is valid but must be explicit.
+
+All four fail closed: a failed API fetch is never reported as "nothing to
+address".
 
 ## Adjusting for project type
 
