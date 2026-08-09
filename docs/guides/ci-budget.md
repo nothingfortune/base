@@ -66,7 +66,9 @@ then push.
 
 - **No check was removed or made non-blocking.** Everything the gate
   asserts, it still asserts.
-- **e2e is not dropped from local practice** — `npm run test:e2e` is its
-  local equivalent. Skipping it on drafts is only safe because you can run
-  it yourself; if you bypass the pre-push gate with `--no-verify`, mark
-  the PR ready and let CI do the job you skipped.
+- **e2e is not dropped from local practice** — its local equivalent is the
+  project's `test:e2e` script. (This template ships the CI wiring only;
+  per CLAUDE.md, Playwright and the script are added per project.)
+  Skipping it on drafts is only safe because you can run it yourself; if
+  you bypass the pre-push gate with `--no-verify`, mark the PR ready and
+  let CI do the job you skipped.
