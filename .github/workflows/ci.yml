@@ -11,4 +11,4 @@ concurrency:
 
 jobs:
   check:
-    uses: nothingfortune/workflows/.github/workflows/ci.yml@93eb4896f38d60399fe61a7e4729bbe5ea0420db # v1
+    uses: nothingfortune/workflows/.github/workflows/ci.yml@6fdf3b6debe617006bd902d6d6384bb9252d1ffe # v1

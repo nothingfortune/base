@@ -1,0 +1,15 @@
+name: Dependabot auto-merge
+
+# Auto-merge patch/minor + dev-only majors once checks pass; hold
+# production majors with a comment. Meaningful here: this repo has branch
+# protection requiring check + e2e, so --auto waits for green.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    uses: nothingfortune/workflows/.github/workflows/dependabot-automerge.yml@6fdf3b6debe617006bd902d6d6384bb9252d1ffe # v1
