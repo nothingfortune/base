@@ -29,14 +29,28 @@ if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
   exit 0
 fi
 
-# -z: NUL-delimited so filenames with spaces or newlines cannot split into
-# phantom paths and misclassify the change.
+# -z, consumed NUL-aware end to end (read -d '' + case patterns, whose *
+# matches embedded newlines): re-splitting on newlines fragmented a
+# newline-bearing filename into phantom paths. In this repo's direction
+# that only ever OVER-checked (a fragment looks non-docish → full gate),
+# but the same construct was a zero-check hole in the inverse-direction
+# consumer (Codex, dollyVision#61) — the classifier reports the truth and
+# lets the caller pick the fail direction.
 # --no-renames: `--name-only` reports only a rename's DESTINATION, so an
 # exact `src/a.ts → docs/a.md` rename would list one doc path and classify
 # doc-only — letting a change that deletes production code skip the whole
 # gate (Codex, base#7). With renames disabled it shows as delete+add and
 # the deleted code path classifies the change correctly.
-nondoc="$(git diff --no-renames --name-only -z "${base}...HEAD" | tr '\0' '\n' | grep -vE '(^docs/|\.md$)' || true)"
+nondoc=""
+while IFS= read -r -d '' path; do
+  case "$path" in
+    docs/* | *.md) ;;
+    *)
+      nondoc="$path"
+      break
+      ;;
+  esac
+done < <(git diff --no-renames --name-only -z "${base}...HEAD")
 if [ -n "$nondoc" ]; then
   echo "non-doc changes present — full gate" >&2
   echo "doc_only=false" >> "$out"
