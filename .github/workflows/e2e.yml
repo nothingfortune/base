@@ -2,6 +2,12 @@ name: e2e
 
 # Draft-skipped Playwright layer; dormant until this repo has a
 # playwright.config.*. Run the reviews-done gate as DRAFT_SKIPPED_CHECK=e2e.
+#
+# Skips are job-level `if:` gates, never workflow-level path filters —
+# `e2e / e2e` is a required check on this repo, and a path-filtered workflow
+# creates no check run (PR blocked forever), while a skipped job reports
+# "skipped" and satisfies protection. See .github/scripts/doc-only.sh for
+# the scope logic and its fail-safe.
 
 on:
   push:
@@ -13,6 +19,29 @@ concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      doc_only: ${{ steps.scope.outputs.doc_only }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - id: scope
+        env:
+          # Current base ref, not the creation-pinned base.sha — see ci.yml.
+          BASE_SHA: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: bash .github/scripts/doc-only.sh
+
+  # Draft guard included: the sibling comment above always CLAIMED
+  # draft-skipped, but the job had no guard (the same 0-of-1 wiring gap
+  # dollyVision had at 2-of-3). `!cancelled()` per ci.yml: a failing scope
+  # job must not skip the gate.
   e2e:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false) }}
     uses: nothingfortune/workflows/.github/workflows/e2e.yml@1f28f5a63001481511a35d5d278ec2198a2da245 # v1

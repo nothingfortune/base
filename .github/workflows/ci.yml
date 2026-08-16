@@ -1,5 +1,13 @@
 name: CI
 
+# The gate, with a doc-only fast path. IMPORTANT: the skip is a job-level
+# `if:` on a scope job's output, NEVER a workflow-level path filter — this
+# repo's branch protection requires `check / check`, and a path-filtered
+# workflow creates no check run at all, leaving the required check "Expected"
+# forever and the PR unmergeable. A job skipped via `if:` reports "skipped",
+# which branch protection treats as satisfied. Scope logic (and its
+# fail-safe direction) lives in .github/scripts/doc-only.sh.
+
 on:
   push:
     branches: [main]
@@ -9,6 +17,76 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      doc_only: ${{ steps.scope.outputs.doc_only }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # scope detection diffs against the base commit
+      - id: scope
+        env:
+          # Read via env, never interpolated into the shell. PR: the CURRENT
+          # base-branch ref — NOT event.pull_request.base.sha, which is pinned
+          # at PR creation; against the merge-ref checkout a stale base makes
+          # the diff include every base-branch commit landed since the PR
+          # opened, misclassifying doc-only PRs as mixed once main advances.
+          # Push: the previous head (zero SHA on first push — the script
+          # fail-safes to the full gate).
+          BASE_SHA: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: bash .github/scripts/doc-only.sh
+
+  # `!cancelled()` is load-bearing: it replaces the implicit success(needs)
+  # so a FAILING scope job cannot skip the gate. Without it, scope failing
+  # would skip check, "skipped" satisfies branch protection, and a PR could
+  # merge with zero checks — the gate must survive its own gatekeeper
+  # breaking. (Plain always() would also resist concurrency cancellation,
+  # which we want to honor; !cancelled() does not.)
   check:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' }}
     uses: nothingfortune/workflows/.github/workflows/ci.yml@1f28f5a63001481511a35d5d278ec2198a2da245 # v1
+
+  # The doc lane: what a prose change can actually break. Runs only when
+  # check skips, so exactly one lane runs per change.
+  docs:
+    needs: scope
+    if: needs.scope.outputs.doc_only == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run format:check
+
+  # The REQUIRED aggregate. Branch protection requires `gate` (not check
+  # directly): on a doc-only PR `check` skips — and a skipped check satisfies
+  # protection — so if `docs` itself is not required, a failing doc lane
+  # could not block the merge (Codex, base#7). This job fails unless the
+  # lane that was supposed to run actually succeeded, turning "exactly one
+  # lane runs" into an enforced invariant rather than a convention.
+  # `!cancelled()` again: an upstream failure must surface here, not skip it.
+  gate:
+    needs: [scope, check, docs]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          DOC_ONLY: ${{ needs.scope.outputs.doc_only }}
+          CHECK: ${{ needs.check.result }}
+          DOCS: ${{ needs.docs.result }}
+        run: |
+          echo "doc_only=$DOC_ONLY check=$CHECK docs=$DOCS"
+          if [ "$DOC_ONLY" = "true" ]; then
+            [ "$DOCS" = "success" ] || { echo "doc lane did not succeed"; exit 1; }
+          else
+            [ "$CHECK" = "success" ] || { echo "full gate did not succeed"; exit 1; }
+          fi
