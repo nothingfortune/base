@@ -41,6 +41,19 @@ echo 'y' > "$REPO/src/weird .md name.ts"
 git -C "$REPO" add -A && commit
 run_scope "doc_only=false" "spacey non-doc filename still classifies full-gate"
 
+# a filename CONTAINING a newline must not re-split into phantom fragments.
+# In this repo's direction a split only ever OVER-checks (a fragmented doc
+# path yields a non-docish fragment → full gate), but the classifier must
+# still report the truth: 'docs/part\nnote.txt' is ONE doc-dir file and
+# classifies doc-only. (The inverse-direction repo, dollyVision, had the
+# same tr re-split as a zero-check hole — Codex, dollyVision#61.)
+NL_BASE="$(git -C "$REPO" rev-parse HEAD)"
+printf 'z' >"$REPO/docs/part
+note.txt"
+git -C "$REPO" add -A && commit
+out="$(cd "$REPO" && BASE_SHA="$NL_BASE" GITHUB_OUTPUT=/dev/stdout bash "$SCRIPT" 2>/dev/null)"
+assert_eq "doc_only=true" "$out" "newline-in-filename doc path classifies doc-only"
+
 # rename evasion: an EXACT code→doc rename reports only its DESTINATION under
 # `--name-only` (rename detection is on by default), so without --no-renames
 # the deleted code path vanishes from the diff and a change that removes
