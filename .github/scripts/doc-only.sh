@@ -31,7 +31,12 @@ fi
 
 # -z: NUL-delimited so filenames with spaces or newlines cannot split into
 # phantom paths and misclassify the change.
-nondoc="$(git diff --name-only -z "${base}...HEAD" | tr '\0' '\n' | grep -vE '(^docs/|\.md$)' || true)"
+# --no-renames: `--name-only` reports only a rename's DESTINATION, so an
+# exact `src/a.ts → docs/a.md` rename would list one doc path and classify
+# doc-only — letting a change that deletes production code skip the whole
+# gate (Codex, base#7). With renames disabled it shows as delete+add and
+# the deleted code path classifies the change correctly.
+nondoc="$(git diff --no-renames --name-only -z "${base}...HEAD" | tr '\0' '\n' | grep -vE '(^docs/|\.md$)' || true)"
 if [ -n "$nondoc" ]; then
   echo "non-doc changes present — full gate" >&2
   echo "doc_only=false" >> "$out"

@@ -41,6 +41,18 @@ echo 'y' > "$REPO/src/weird .md name.ts"
 git -C "$REPO" add -A && commit
 run_scope "doc_only=false" "spacey non-doc filename still classifies full-gate"
 
+# rename evasion: an EXACT code→doc rename reports only its DESTINATION under
+# `--name-only` (rename detection is on by default), so without --no-renames
+# the deleted code path vanishes from the diff and a change that removes
+# production code classifies doc-only (Codex, base#7). Scope the diff to just
+# the rename: base = the commit that adds the code file.
+echo 'exact content' > "$REPO/src/code.ts"
+git -C "$REPO" add -A && commit
+RENAME_BASE="$(git -C "$REPO" rev-parse HEAD)"
+git -C "$REPO" mv src/code.ts docs/code.md && commit
+out="$(cd "$REPO" && BASE_SHA="$RENAME_BASE" GITHUB_OUTPUT=/dev/stdout bash "$SCRIPT" 2>/dev/null)"
+assert_eq "doc_only=false" "$out" "exact code→doc rename classifies full-gate"
+
 # fail-safe: unresolvable base → full gate, exit 0 (never blocks CI itself).
 out="$(cd "$REPO" && BASE_SHA=0000000000000000000000000000000000000000 GITHUB_OUTPUT=/dev/stdout bash "$SCRIPT" 2>/dev/null)"; code=$?
 assert_eq "doc_only=false" "$out" "zero SHA fail-safes to the full gate"

@@ -31,10 +31,14 @@ jobs:
           fetch-depth: 0 # scope detection diffs against the base commit
       - id: scope
         env:
-          # Read via env, never interpolated into the shell. PR: the base
-          # branch head; push: the previous head (zero SHA on first push —
-          # the script fail-safes to the full gate).
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          # Read via env, never interpolated into the shell. PR: the CURRENT
+          # base-branch ref — NOT event.pull_request.base.sha, which is pinned
+          # at PR creation; against the merge-ref checkout a stale base makes
+          # the diff include every base-branch commit landed since the PR
+          # opened, misclassifying doc-only PRs as mixed once main advances.
+          # Push: the previous head (zero SHA on first push — the script
+          # fail-safes to the full gate).
+          BASE_SHA: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
         run: bash .github/scripts/doc-only.sh
 
   # `!cancelled()` is load-bearing: it replaces the implicit success(needs)
@@ -62,3 +66,27 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run format:check
+
+  # The REQUIRED aggregate. Branch protection requires `gate` (not check
+  # directly): on a doc-only PR `check` skips — and a skipped check satisfies
+  # protection — so if `docs` itself is not required, a failing doc lane
+  # could not block the merge (Codex, base#7). This job fails unless the
+  # lane that was supposed to run actually succeeded, turning "exactly one
+  # lane runs" into an enforced invariant rather than a convention.
+  # `!cancelled()` again: an upstream failure must surface here, not skip it.
+  gate:
+    needs: [scope, check, docs]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          DOC_ONLY: ${{ needs.scope.outputs.doc_only }}
+          CHECK: ${{ needs.check.result }}
+          DOCS: ${{ needs.docs.result }}
+        run: |
+          echo "doc_only=$DOC_ONLY check=$CHECK docs=$DOCS"
+          if [ "$DOC_ONLY" = "true" ]; then
+            [ "$DOCS" = "success" ] || { echo "doc lane did not succeed"; exit 1; }
+          else
+            [ "$CHECK" = "success" ] || { echo "full gate did not succeed"; exit 1; }
+          fi
