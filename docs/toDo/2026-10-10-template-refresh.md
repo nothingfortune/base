@@ -13,27 +13,27 @@ the gates below each justify the dependency they add.
 
 ## PR 1 — hardening (no new dependencies)
 
-- [ ] `pr-reviews-done.sh` refuses (exit 3) on unaddressed or unknown bot
+- [x] `pr-reviews-done.sh` refuses (exit 3) on unaddressed or unknown bot
       threads; today it posts a verdict and exits 0, so
       `pr-reviews-done.sh && gh pr merge` merges over an unread finding
       (dollyVision #85). Failing test first.
-- [ ] `tests/bin/_harness.sh` unsets git's local env vars: a hook-exported
+- [x] `tests/bin/_harness.sh` unsets git's local env vars: a hook-exported
       `GIT_DIR` overrides `git -C <tmp>`, so bin tests run from a worktree's
       pre-push rewrote the real repo (dollyVision #207). Tripwire test.
-- [ ] `tests/bin/run.sh`: per-suite timing, heartbeat, `SHELL_TESTS_SKIP`,
+- [x] `tests/bin/run.sh`: per-suite timing, heartbeat, `SHELL_TESTS_SKIP`,
       slowest-suites summary (outerReach #403) + `tests/bin/run.test.sh`.
-- [ ] `tests/bin/script-syntax.test.sh`: `bash -n` over every `bin/**/*.sh`.
-- [ ] Dependabot: one Monday batch, minor/patch grouped across all deps,
+- [x] `tests/bin/script-syntax.test.sh`: `bash -n` over every `bin/**/*.sh`.
+- [x] Dependabot: one Monday batch, minor/patch grouped across all deps,
       majors as their own PRs, commit prefixes (dollyVision #132, atlasAdmin,
       outerReach).
-- [ ] Bump `nothingfortune/workflows` pin `1f28f5a` → `102318a` (current v1:
+- [x] Bump `nothingfortune/workflows` pin `1f28f5a` → `102318a` (current v1:
       setup-node v7).
-- [ ] `deploy-design-preview.yml`: map the two Cloudflare secrets explicitly;
+- [x] `deploy-design-preview.yml`: map the two Cloudflare secrets explicitly;
       `secrets: inherit` is rejected cross-org for a required secret
       (fleetDemo G15).
-- [ ] `ci.yml`: never cancel a queued main run (concurrency keyed on run id
+- [x] `ci.yml`: never cancel a queued main run (concurrency keyed on run id
       off-PR); `timeout-minutes` on base's own jobs.
-- [ ] `.gitattributes` (`* text=auto eol=lf`); ignore `.claude/worktrees/` in
+- [x] `.gitattributes` (`* text=auto eol=lf`); ignore `.claude/worktrees/` in
       `.gitignore`, ESLint, Prettier (atlasAdmin; jarvis phantom failures).
 
 ## PR 2 — quality gates
