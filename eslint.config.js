@@ -30,6 +30,19 @@ export default tseslint.config(
       ],
     },
   },
+  // Monolith limits: a file or function past these sizes hides invariants no test can isolate.
+  {
+    files: ['src/**/*.{ts,tsx}', 'scripts/**/*.{ts,js,mjs}'],
+    rules: {
+      'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['error', { max: 150, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  // Every describe/it callback is a function, so suites get a file limit only.
+  {
+    files: ['tests/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
+    rules: { 'max-lines': ['error', { max: 600, skipBlankLines: true, skipComments: true }] },
+  },
   // Each rule bans a shape of test that stays green while checking nothing.
   {
     files: ['tests/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],

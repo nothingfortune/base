@@ -84,6 +84,38 @@ dollyVision #79 replaced try/catch assertion blocks, safe only while each one
 remembered an `expect.unreachable` guard, with `thrown()`/`thrownAsync()`, which
 let `no-conditional-expect` become an error.
 
+## Monolith limits (ESLint)
+
+**Enforces:** `npm run lint` errors on a file in `src/` or `scripts/` over 400
+lines and on a function there over 150 lines. Test files (`tests/**` and every
+`*.test.*`) get a 600-line file limit and no function limit. Blank lines and
+comments do not count.
+
+**Why:** a function that encodes several invariants can only be tested as a
+whole, and every change to it carries the risk of all of them. Files grow the
+same way one feature at a time, and no reviewer sees the size of a file in a
+diff. The limits catch the growth on the PR that causes it, while the split is
+still cheap. Tests have no function limit because every `describe` and `it`
+callback is a function, and a real suite outgrows 150 lines on its first day.
+
+**Updating:** split a file along its existing export or `describe` boundaries;
+split a function where its invariants separate, so each gets its own test. A
+genuine exception (a generated table, a parser state machine) takes a
+file-level `/* eslint-disable max-lines -- <why> */` whose reason names what
+makes splitting it wrong. Change a limit for the whole repo only in its own PR.
+
+**Proof:** `tests/unit/eslint-config.test.ts` lints sized fixtures through
+ESLint's Node API. The `src/` limits pass at their size and fire one line
+over, blank lines and comments do not count, `scripts/` and test files are
+covered, and a 200-line test callback stays clean.
+
+**Origin:** dollyVision's 2026-09-26 holistic code review found
+`matchVersions` (365 lines), `assertIdentityAgainstVersion` (395) and
+`runScanInner` (560), and recommended `max-lines` ~400 and
+`max-lines-per-function` ~150 to stop them regrowing after the split.
+jarvis-ur-ops-automation's 2026-09-23 code review (row 4.8) flagged test
+suites of 900 to 1,135 lines.
+
 ## Coverage floor and drift ratchet
 
 **Enforces:** `npm run test:coverage` (vitest with `@vitest/coverage-v8`)
