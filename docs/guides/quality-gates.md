@@ -173,3 +173,34 @@ run here caught `CLAUDE.md` naming an illustrative `parse.ts` under `src/lib/`
 that does not exist, and while this guide was written it caught the guide citing
 sibling-repo paths as if they were this repo's. The CLAUDE.md example now
 uses a `<name>` placeholder.
+
+## Dead code (knip)
+
+**Enforces:** `npm run knip` fails on unused files, unused exports, unused
+dependencies and devDependencies, and unlisted dependencies. `knip.json`
+declares the entries: `src/index.ts` and every `scripts/*.mjs` (the
+`bin/*.sh` wrappers call them, which knip cannot follow). knip's own plugins
+pick up the vitest, ESLint and TypeScript configs and the test files.
+
+**Why:** dead code and stale dependencies cost review time, install time and
+attack surface, and nothing else in `check` notices them. A template is where
+this starts cheapest: every clone inherits a clean graph.
+
+**Updating:** when a new kind of entry point appears (a CLI, a worker, a
+second `scripts/` file type), add it to `entry`. Fix the import graph rather
+than ignoring a finding; an `ignore*` entry in `knip.json` needs a reason in
+the PR that adds it.
+
+**Blind spot:** test files are entries, so a module imported only by its own
+test looks used. `knip --production` drops tests from the graph and would
+catch it, at the cost of flagging modules written test-first before they are
+wired in. Run it by hand when auditing.
+
+**Proof:** a manual run with three planted defects (an unused export in a new
+`src/lib/` module, an orphan `src/` file, an unused `left-pad`
+devDependency): knip exited 1 listing all three under Unused exports, Unused
+files and Unused devDependencies. Reverted afterwards.
+
+**Origin:** jarvis-ur-ops-automation runs knip in its `validate` gate
+(`check:dead`); its 2026-09-23 code review (item 3.6) recorded the test-entry
+blind spot above.
