@@ -1,5 +1,10 @@
 # Template refresh — harvest from dollyVision, outerReach, atlasAdmin, jarvis, fleetDemo
 
+> **CLOSED 2026-10-10.** All four PRs built on stacked branches
+> `chore/template-refresh-{1-hardening,2-gates,3-bootstraps,4-agents}`.
+> The Backlog section below is parked, not done — pull items into a fresh
+> todo when wanted.
+
 **Goal:** bring the generic lessons the sibling repos learned since the last
 port (2026-08-16) back into the template, as four sequential PRs.
 
