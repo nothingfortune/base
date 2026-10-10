@@ -67,15 +67,14 @@ What each gate enforces, and how to move its ratchet, is in
   something private, the boundary is wrong — fix the boundary, do not export the
   internal.
 - Every bug fix starts with a failing test that reproduces the bug. Watch it
-  fail, then fix it.
+  fail for the right reason, then fix it: a test green before the fix is not
+  testing the bug.
 - Never make a suite green by deleting a test, adding `.skip`, or loosening an
   assertion. If a test is genuinely wrong, say so and explain why before
   changing it.
 - Mock only what crosses the network, filesystem, or clock. Prefer real objects.
 - A test asserts one expected result. No conditionals or `try`/`catch` that let
   it pass either way.
-- Watch it fail for the right reason. A test green before the fix is not
-  testing the bug.
 - Assert what separates the branches, not what they share. If deleting the
   branch you just wrote leaves the suite green, the test is decorative.
 - Drive the precondition; do not assume it. Assert the state a step depends on
@@ -109,6 +108,8 @@ accompany bug fixes; mark incomplete implementations.
   `docs/`, never source.
 - The markers `@public-api`, `// strtotime-ok:`, `@covered-by`, and
   `// env-gate-ok:` are required where they apply and exempt from the above.
+- `npm run comment-density` holds the count of multi-line comment blocks in
+  `src/` to its baseline; a new block fails `check`.
 
 ## Working rules
 
@@ -145,9 +146,11 @@ accompany bug fixes; mark incomplete implementations.
   - `mutation.yml` — manual Stryker run (`npm run test:mutation`).
     Informational: never on PRs, never required; fails only when Stryker
     kills nothing, which means the runner broke.
-- Dependabot (npm + actions, weekly): minors/patches ride CI; a major that
-  fails the gate gets CLOSED with a comment and taken deliberately in a
-  dedicated branch — never merged red, never left rotting open.
+- Dependabot (npm + actions, one Monday batch): minors/patches arrive grouped
+  and ride CI; each major arrives alone. A major that fails the gate gets
+  CLOSED with a comment and taken deliberately in a dedicated branch — never
+  merged red, never left rotting open. Vitest and coverage-v8 majors are
+  ignored until Stryker supports them (`docs/guides/quality-gates.md`).
 - `.nvmrc` is the single source of truth for the Node version, read via
   `node-version-file`. Never hardcode a version in the workflow.
 - Install with `npm ci`, never `npm install`, in CI. `package-lock.json` is
