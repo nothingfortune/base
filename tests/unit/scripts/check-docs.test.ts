@@ -100,3 +100,27 @@ describe('check-docs on clean docs', () => {
     expect(result).toEqual({ status: 0, output: 'docs:check OK — 2 markdown files checked\n' });
   });
 });
+
+describe('check-docs after a tracked doc is deleted but not yet staged', () => {
+  it('skips the deleted doc instead of crashing', () => {
+    const root = fixture({
+      'README.md': '# Readme\n',
+      'docs/toDo/old-plan.md': '# Old\n',
+    });
+    rmSync(join(root, 'docs/toDo/old-plan.md'));
+    const result = check(root);
+    rmSync(root, { recursive: true, force: true });
+    expect(result).toEqual({ status: 0, output: 'docs:check OK — 1 markdown files checked\n' });
+  });
+
+  it('still reports a link to the deleted doc as broken', () => {
+    const root = fixture({
+      'README.md': '[plan](docs/toDo/old-plan.md)\n',
+      'docs/toDo/old-plan.md': '# Old\n',
+    });
+    rmSync(join(root, 'docs/toDo/old-plan.md'));
+    const result = check(root);
+    rmSync(root, { recursive: true, force: true });
+    expect(result.output).toContain('README.md:1 broken link → docs/toDo/old-plan.md');
+  });
+});

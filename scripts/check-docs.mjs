@@ -72,13 +72,14 @@ function main() {
     rootFlag === -1
       ? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
       : path.resolve(process.argv[rootFlag + 1] ?? '.');
+  const exists = (target) => existsSync(path.join(root, target));
+  // ls-files still lists a tracked doc deleted from disk until the deletion is staged.
   const tracked = execFileSync('git', ['ls-files', '-z', '--', '*.md'], {
     cwd: root,
     encoding: 'utf8',
   })
     .split('\0')
-    .filter((file) => file !== '');
-  const exists = (target) => existsSync(path.join(root, target));
+    .filter((file) => file !== '' && exists(file));
   const failures = tracked.flatMap((doc) =>
     checkFile(doc, readFileSync(path.join(root, doc), 'utf8'), exists),
   );
