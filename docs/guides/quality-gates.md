@@ -264,3 +264,29 @@ Force-adding `probe.sql` to this repo made the suite fail naming it.
 
 **Origin:** `outerReach/bin/repo-hygiene.sh` gate E (#387/#389), which bans
 tracked dumps because a WordPress dump carries `wp_users`.
+
+## Mutation testing (informational)
+
+**What:** `npm run test:mutation` runs Stryker over `src/**/*.ts`: it mutates
+the code and re-runs Vitest per mutant. A surviving mutant is a change the
+suite cannot detect. Reports land in `reports/mutation/` (gitignored), with
+incremental state so re-runs test only changed mutants. `mutation.yml` runs
+it on manual dispatch, optionally scoped by a `mutate` glob.
+
+**Why:** line coverage counts a line run by any test; mutation testing asks
+whether any test would fail if that line were wrong.
+
+**Not a gate:** `thresholds.break` is `null` and the workflow never runs on
+PRs, so a low score never blocks. If it does not block, it must not look like
+it blocks. The workflow fails only when Stryker kills zero mutants, which
+means the runner is broken, not the tests.
+
+**Updating:** accept a mutant only with a single-line
+`// Stryker disable next-line <Mutator>: <reason>`; never by weakening an
+assertion or narrowing `mutate`. Vitest and coverage-v8 majors are ignored by
+Dependabot because Vitest 5 made Stryker run zero tests per mutant
+([stryker-js#6210](https://github.com/stryker-mutator/stryker-js/issues/6210));
+take one deliberately and confirm `npm run test:mutation` still reports kills.
+
+**Origin:** dollyVision (`stryker.config.mjs`, `mutation.yml`; #173 dropped the weekly schedule for a dispatched glob because the full scope does not fit a job; #215 pinned Vitest after a major broke the runner) and
+jarvis-ur-ops-automation (manual, advisory workflow).

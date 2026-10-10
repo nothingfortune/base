@@ -53,6 +53,7 @@ npm run check
 | `npm run test:coverage`   | Vitest with coverage floors                                    |
 | `npm run coverage:drift`  | Coverage floors must track measured coverage                   |
 | `npm run test:bin`        | Bash tests for `bin/` scripts and repo guards                  |
+| `npm run test:mutation`   | Stryker mutation testing (informational)                       |
 | `npm run docs:check`      | Markdown links and living-doc paths resolve                    |
 
 The gates are explained in [quality gates](docs/guides/quality-gates.md).

@@ -19,6 +19,12 @@ updates:
         update-types: [minor, patch]
     commit-message:
       prefix: 'chore(deps)'
+    ignore:
+      # Vitest 5 makes Stryker run zero tests per mutant: https://github.com/stryker-mutator/stryker-js/issues/6210
+      - dependency-name: vitest
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@vitest/coverage-v8'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:

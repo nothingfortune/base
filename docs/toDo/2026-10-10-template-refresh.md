@@ -61,7 +61,7 @@ the gates below each justify the dependency they add.
       warns when the repo cannot enforce rulesets (private on a free plan).
       Repo settings do not copy from a template — this is how a clone gets
       them.
-- [ ] Mutation testing: Stryker + vitest runner, `npm run test:mutation`,
+- [x] Mutation testing: Stryker + vitest runner, `npm run test:mutation`,
       `mutation.yml` (`workflow_dispatch`, informational, report artifact),
       dependabot ignore for vitest majors (dollyVision #215).
 - [x] `bin/init.sh <name> [--title] [--github]`: one-shot setup — renames
