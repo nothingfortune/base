@@ -16,6 +16,10 @@ heartbeat() { # <name> <start-epoch>
     printf '   … still running %s (%ds)\n' "$1" "$(( $(date +%s) - $2 ))"
   done
 }
+hb=""; child=""
+# A signal must take the heartbeat and suite with it: orphans keep writing and hold stdout open.
+trap 'kill ${hb:+"$hb"} ${child:+"$child"} 2>/dev/null; exit 143' TERM
+trap 'kill ${hb:+"$hb"} ${child:+"$child"} 2>/dev/null; exit 130' INT
 for t in "$DIR"/*.test.sh; do
   [ -f "$t" ] || continue
   name="$(basename "$t")"
@@ -23,8 +27,10 @@ for t in "$DIR"/*.test.sh; do
   n=$((n+1)); s=$(date +%s)
   printf '== %s == [%3ds elapsed]\n' "$name" "$(( s - t0 ))"
   heartbeat "$name" "$s" & hb=$!
-  if bash "$t"; then verdict="ok"; else verdict="FAIL"; rc=1; fi
-  kill "$hb" 2>/dev/null; wait "$hb" 2>/dev/null
+  # Backgrounded so a trapped signal interrupts `wait` at once; <&0 keeps the suite's stdin.
+  bash "$t" <&0 & child=$!
+  if wait "$child"; then verdict="ok"; else verdict="FAIL"; rc=1; fi
+  kill "$hb" 2>/dev/null; wait "$hb" 2>/dev/null; hb=""; child=""
   d=$(( $(date +%s) - s )); timings="$timings$d $name"$'\n'
   printf '   %s in %ds\n' "$verdict" "$d"
 done

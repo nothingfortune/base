@@ -40,4 +40,13 @@ suite "$TMP/quick" quick.test.sh 'sleep 1'
 start=$(date +%s); out="$(HEARTBEAT_SECS=8 bash "$RUNNER" "$TMP/quick" 2>&1)"; secs=$(( $(date +%s) - start ))
 assert_eq "1" "$([ "$secs" -le 4 ] && echo 1 || echo 0)" "a captured run returns within 4s, not the heartbeat interval (${secs}s)"
 
+# A TERM to the runner mid-suite takes the heartbeat with it; an orphan writes, and holds stdout, forever.
+suite "$TMP/hang" hang.test.sh 'exec sleep 10'
+HEARTBEAT_SECS=1 bash "$RUNNER" "$TMP/hang" >"$TMP/hang.out" 2>&1 & runner=$!
+sleep 1.5; kill -TERM "$runner"; wait "$runner" 2>/dev/null
+before="$(grep -c 'still running' "$TMP/hang.out" || true)"; sleep 2.5
+after="$(grep -c 'still running' "$TMP/hang.out" || true)"
+pkill -f "$TMP/hang" 2>/dev/null
+assert_eq "$before" "$after" "a TERMed runner leaves no heartbeat writing"
+
 test_summary
