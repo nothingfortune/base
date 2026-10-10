@@ -17,9 +17,11 @@ heartbeat() { # <name> <start-epoch>
   done
 }
 hb=""; child=""
+# Job control gives each background job its own process group, so one kill reaches a whole suite tree.
+set -m
 # A signal must take the heartbeat and suite with it: orphans keep writing and hold stdout open.
-trap 'kill ${hb:+"$hb"} ${child:+"$child"} 2>/dev/null; exit 143' TERM
-trap 'kill ${hb:+"$hb"} ${child:+"$child"} 2>/dev/null; exit 130' INT
+trap 'kill -- ${hb:+"-$hb"} ${child:+"-$child"} 2>/dev/null; exit 143' TERM
+trap 'kill -- ${hb:+"-$hb"} ${child:+"-$child"} 2>/dev/null; exit 130' INT
 for t in "$DIR"/*.test.sh; do
   [ -f "$t" ] || continue
   name="$(basename "$t")"

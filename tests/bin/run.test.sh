@@ -49,4 +49,12 @@ after="$(grep -c 'still running' "$TMP/hang.out" || true)"
 pkill -f "$TMP/hang" 2>/dev/null
 assert_eq "$before" "$after" "a TERMed runner leaves no heartbeat writing"
 
+# ...and takes the suite's whole process tree, not just the suite's own shell.
+suite "$TMP/tree" tree.test.sh 'sleep 13.7; :'
+bash "$RUNNER" "$TMP/tree" >/dev/null 2>&1 & runner=$!
+sleep 1; kill -TERM "$runner"; wait "$runner" 2>/dev/null; sleep 0.5
+left="$(pgrep -f 'sleep 13.7' | grep -c . || true)"
+pkill -f 'sleep 13.7' 2>/dev/null
+assert_eq "0" "$left" "a TERMed runner leaves none of the suite's children running"
+
 test_summary
