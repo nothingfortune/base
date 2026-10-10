@@ -13,8 +13,9 @@ on:
     branches: [main]
   pull_request:
 
+# PRs supersede their own runs; every main push gets its own group so none is cancelled.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -23,6 +24,7 @@ permissions:
 jobs:
   scope:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       doc_only: ${{ steps.scope.outputs.doc_only }}
     steps:
@@ -50,7 +52,7 @@ jobs:
   check:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' }}
-    uses: nothingfortune/workflows/.github/workflows/ci.yml@1f28f5a63001481511a35d5d278ec2198a2da245 # v1
+    uses: nothingfortune/workflows/.github/workflows/ci.yml@102318a26f52e74480fc0006317dbc6bb4b14897 # v1
 
   # The doc lane: what a prose change can actually break. Runs only when
   # check skips, so exactly one lane runs per change.
@@ -58,6 +60,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.doc_only == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -78,6 +81,7 @@ jobs:
     needs: [scope, check, docs]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - env:
           DOC_ONLY: ${{ needs.scope.outputs.doc_only }}
