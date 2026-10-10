@@ -23,6 +23,7 @@ This is a template base repo, this file needs to be updated to match specific pr
 | `npm run coverage:drift`                  | Fails when a floor sits more than 2 points under measured coverage                                   |
 | `npm run test:bin`                        | Bash tests for `bin/` scripts and repo guards                                                        |
 | `npm run docs:check`                      | Relative links and living-doc repo paths resolve                                                     |
+| `bin/setup-github.sh [--dry-run]`         | Apply the default-branch ruleset and repo settings; safe to re-run                                   |
 
 What each gate enforces, and how to move its ratchet, is in
 `docs/guides/quality-gates.md`.
