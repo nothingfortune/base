@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   deploy:
-    uses: nothingfortune/workflows/.github/workflows/deploy-design-preview.yml@102318a26f52e74480fc0006317dbc6bb4b14897 # v1
+    uses: nothingfortune/workflows/.github/workflows/deploy-design-preview.yml@102318a26f52e74480fc0006317dbc6bb4b14897 # v1.1.1
     # Explicit mapping: `inherit` is rejected for a required secret when the caller is in another org.
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

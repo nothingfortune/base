@@ -27,6 +27,9 @@ updates:
       time: '04:00'
       timezone: Etc/UTC
     groups:
+      # One release of the shared workflows bumps every caller file; it arrives as one PR.
+      nothingfortune-workflows:
+        patterns: ['nothingfortune/workflows*']
       actions-minor-and-patch:
         update-types: [minor, patch]
     commit-message:
