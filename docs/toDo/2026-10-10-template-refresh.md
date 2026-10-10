@@ -38,19 +38,19 @@ the gates below each justify the dependency they add.
 
 ## PR 2 — quality gates
 
-- [ ] `comment-density` (dollyVision's: TS scanner, marker exemptions,
+- [x] `comment-density` (dollyVision's: TS scanner, marker exemptions,
       block-count ratchet against `comment-density-baseline.json`), adapted
       for a root `src/`. In `check`.
-- [ ] ESLint test-integrity rules via `@vitest/eslint-plugin`
+- [x] ESLint test-integrity rules via `@vitest/eslint-plugin`
       (`expect-expect`, `no-conditional-expect`, `no-disabled-tests`, …),
       `--max-warnings 0`, ban `as unknown as` double assertions.
-- [ ] Coverage floor (`@vitest/coverage-v8`) + drift ratchet script; `check`
+- [x] Coverage floor (`@vitest/coverage-v8`) + drift ratchet script; `check`
       runs coverage.
-- [ ] Docs integrity test: relative links and backticked repo paths in living
+- [x] Docs integrity test: relative links and backticked repo paths in living
       docs must resolve (dollyVision `check-doc-links` + outerReach
       `docs-paths`); also runs in CI's doc-only lane.
-- [ ] knip dead-code gate.
-- [ ] Tracked-dump guard: `.gitignore` patterns + test failing on tracked
+- [x] knip dead-code gate.
+- [x] Tracked-dump guard: `.gitignore` patterns + test failing on tracked
       `*.sql`, `*.dump`, `*.sqlite`, archives (outerReach repo-hygiene gate E).
 
 ## PR 3 — bootstraps

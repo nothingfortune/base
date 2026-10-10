@@ -27,20 +27,30 @@ npm run check
    [quality gates](docs/guides/quality-gates.md#coverage-floor-and-drift-ratchet)).
 6. Adjust `tsconfig.json` for the project type — see the last section of
    `CLAUDE.md`.
-7. Delete what you do not need: `bin/`, `scripts/`, `tests/e2e/`.
+7. Delete what you do not need: `tests/e2e/`, and the PR-review scripts in
+   `bin/` if you skip the AI review loop. Keep `scripts/` and
+   `bin/comment-density.sh`: `npm run check` runs them.
 
 ## Scripts
 
-| Command                | Purpose                                        |
-| ---------------------- | ---------------------------------------------- |
-| `npm run check`        | The gate: typecheck, lint, format check, tests |
-| `npm run typecheck`    | `tsc --noEmit`                                 |
-| `npm run lint`         | ESLint                                         |
-| `npm run lint:fix`     | ESLint with autofix                            |
-| `npm run format`       | Prettier, writing changes                      |
-| `npm run format:check` | Prettier, check only                           |
-| `npm test`             | Vitest, single run                             |
-| `npm run test:watch`   | Vitest, watch mode                             |
+| Command                   | Purpose                                                        |
+| ------------------------- | -------------------------------------------------------------- |
+| `npm run check`           | The gate: every check below; coverage stands in for `npm test` |
+| `npm run typecheck`       | `tsc --noEmit`                                                 |
+| `npm run lint`            | ESLint, zero warnings allowed                                  |
+| `npm run lint:fix`        | ESLint with autofix                                            |
+| `npm run comment-density` | Multi-line comment block ratchet                               |
+| `npm run knip`            | Dead code and unused dependencies                              |
+| `npm run format`          | Prettier, writing changes                                      |
+| `npm run format:check`    | Prettier, check only                                           |
+| `npm test`                | Vitest, single run                                             |
+| `npm run test:watch`      | Vitest, watch mode                                             |
+| `npm run test:coverage`   | Vitest with coverage floors                                    |
+| `npm run coverage:drift`  | Coverage floors must track measured coverage                   |
+| `npm run test:bin`        | Bash tests for `bin/` scripts and repo guards                  |
+| `npm run docs:check`      | Markdown links and living-doc paths resolve                    |
+
+The gates are explained in [quality gates](docs/guides/quality-gates.md).
 
 ## Layout
 
