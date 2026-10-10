@@ -20,7 +20,11 @@ npm run check
 4. Delete the template's own design doc from `docs/designs/` and plan from
    `docs/toDo/completed/`.
 5. Delete the placeholder `src/index.ts` and `tests/unit/index.test.ts` once real
-   code exists.
+   code exists. In that same first commit with real code, set the coverage
+   `thresholds` in `vitest.config.ts` to about 1 point under what
+   `npm run test:coverage` measures. This one-time calibration is the only time
+   a floor goes down; afterwards floors only rise (see
+   [quality gates](docs/guides/quality-gates.md#coverage-floor-and-drift-ratchet)).
 6. Adjust `tsconfig.json` for the project type — see the last section of
    `CLAUDE.md`.
 7. Delete what you do not need: `bin/`, `scripts/`, `tests/e2e/`.

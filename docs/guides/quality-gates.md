@@ -83,3 +83,47 @@ let a committed `.skip` reach main because `eslint .` exits 0 on warnings.
 dollyVision #79 replaced try/catch assertion blocks, safe only while each one
 remembered an `expect.unreachable` guard, with `thrown()`/`thrownAsync()`, which
 let `no-conditional-expect` become an error.
+
+## Coverage floor and drift ratchet
+
+**Enforces:** `npm run test:coverage` (vitest with `@vitest/coverage-v8`)
+fails when statements, branches, functions or lines across `src/**/*.ts` fall
+below the `thresholds` in `vitest.config.ts`. `npm run coverage:drift`
+(`scripts/check-coverage-drift.mjs`) then fails when any measured metric sits
+more than 2 points (`MAX_GAP`) above its floor. It fails closed when
+`coverage/coverage-summary.json` is missing or a metric has no floor.
+
+**Why:** a floor only catches a regression while it sits just under the
+measured totals. Left behind as coverage rises, it becomes decoration, and
+the slack is code that can go untested with a green gate. The drift check
+makes a stale floor as loud as one set too high. `check` runs coverage in
+place of the plain test run; `npm test` stays the fast loop.
+
+**Ratchet:**
+
+- Coverage rose and drift fails: raise the floors to about 1 point under the
+  measured totals it prints, in the same PR.
+- Coverage fell below a floor: add the missing tests. Never lower a floor to
+  pass, and never widen `MAX_GAP`.
+- The one exception is a clone's initial calibration. The template's
+  placeholder measures 100%, so its floors are 99. In the first commit with
+  real code, set each floor to about 1 point under what that code measures.
+  After that commit the rules above apply.
+
+`coverage-drift` reads the floors with a regex over `thresholds: {` in
+`vitest.config.ts`, so keep them as plain numeric literals in that block.
+
+**Upgrades:** `vitest` and `@vitest/coverage-v8` must stay on the same
+version; coverage-v8 pins vitest as an exact peer. Dependabot's minor/patch
+group moves them together. A vitest major arrives as its own PR: take it with
+the matching coverage-v8 major in the same branch.
+
+**Proof:** `tests/unit/scripts/check-coverage-drift.test.ts` runs the script
+against fixture configs and summaries: a 2.01-point gap fails and flags the
+metric, an in-gap summary passes, a missing summary and a missing floor both
+fail.
+
+**Incident:** dollyVision #83: its floor was raised on 2026-08-13 and was over
+3 points adrift by 2026-08-17, about 60 statements and 50 branches that could
+go untested with a green gate. It had happened twice, so the fix was a
+mechanism rather than a reminder.
