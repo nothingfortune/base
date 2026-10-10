@@ -74,6 +74,53 @@ What each gate enforces, and how to move its ratchet, is in
 - Mock only what crosses the network, filesystem, or clock. Prefer real objects.
 - A test asserts one expected result. No conditionals or `try`/`catch` that let
   it pass either way.
+- Watch it fail for the right reason. A test green before the fix is not
+  testing the bug.
+- Assert what separates the branches, not what they share. If deleting the
+  branch you just wrote leaves the suite green, the test is decorative.
+- Drive the precondition; do not assume it. Assert the state a step depends on
+  exists before asserting what the step does with it.
+- A test may not depend on another defect. When a fix breaks an unrelated test,
+  give that test a real trigger; never restore the old behavior.
+- A green exit code is not evidence. Read the diff after any scripted edit, and
+  plant the defect a new checker hunts to watch it fire.
+- A suppression marker is a claim. Its reason must be specific enough to be
+  falsifiable.
+- A spec sentence that states a behavior gets its test in the same change.
+  Ordering claims are tested with out-of-order input.
+- A failure reported as a return value, not an exception, gets a test that
+  makes it fail.
+- A displayed count is tested by counting the records behind it, never against
+  another number the same code produced.
+- Assert absence against the data source, never against the first render.
+- Run the whole suite before claiming done, not just the file you touched.
+
+Why each rule exists: `docs/guides/testing.md`.
+
+## Comments
+
+The nine rules ([Spertus](https://stackoverflow.blog/2021/12/23/best-practices-for-writing-code-comments/)):
+comments do not duplicate the code; do not excuse unclear code; if a clear one
+cannot be written, fix the code; dispel confusion; explain unidiomatic code;
+link the source of copied code; link external references where they help;
+accompany bug fixes; mark incomplete implementations.
+
+- A justified comment is ONE line stating WHY. Extended rationale goes in
+  `docs/`, never source.
+- The markers `@public-api`, `// strtotime-ok:`, `@covered-by`, and
+  `// env-gate-ok:` are required where they apply and exempt from the above.
+
+## Working rules
+
+- A plan prescribes intent, evidence, and acceptance criteria — not code it has
+  not executed.
+- A commit message is a claim. If it says "verified by X", X was run.
+- Before trusting a probe you wrote, run it where you already know the answer,
+  in both directions.
+- When a review flags one instance, sweep its whole class in the same round.
+  Prefer making the class inexpressible over catching it.
+- Two review rounds on one line means the operation is wrong, not the value.
+- Docs name the command, not the count it prints; counts go stale.
 
 ## CI
 
@@ -135,6 +182,18 @@ AI reviewers (Codex + GitHub Copilot) review PRs. The loop, in order:
 
 All four fail closed: a failed API fetch is never reported as "nothing to
 address".
+
+Pull requests:
+
+- One concern per PR. A behavior change, its test, and the docs it makes false
+  ship together; nothing else rides along. A change that will not converge in
+  review is too big: split it.
+- Stage files by path, never `git add -A` or `git add .`.
+- Answer every finding on the PR: fixed (with the commit), tracked (where), or
+  won't fix (why). Push a round's fixes as one commit from a clean tree.
+- Codex and Copilot read `AGENTS.md` (a pointer here) and
+  `.github/copilot-instructions.md` (the review rubric). Rules they must
+  enforce go in this file.
 
 ## Adjusting for project type
 
