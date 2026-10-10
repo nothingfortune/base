@@ -3,6 +3,10 @@
 # Usage in a *.test.sh file:  source "$(dirname "$0")/_harness.sh"
 set -uo pipefail
 
+# A hook-exported GIT_DIR overrides `git -C`; clear it so test repos never touch the real one.
+# shellcheck disable=SC2046
+unset $(git rev-parse --local-env-vars)
+
 _T_PASS=0; _T_FAIL=0
 
 assert_eq() { # <expected> <actual> <message>
