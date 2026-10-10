@@ -71,13 +71,13 @@ the gates below each justify the dependency they add.
 
 ## PR 4 — agent and docs surface
 
-- [ ] `AGENTS.md` pointer to `CLAUDE.md` (a pointer cannot drift).
-- [ ] `.github/copilot-instructions.md`: review rubric only.
-- [ ] `.claude/settings.json`: deny agent edits to its own settings.
-- [ ] `CLAUDE.md`: new testing/process rules, one line each; incidents behind
+- [x] `AGENTS.md` pointer to `CLAUDE.md` (a pointer cannot drift).
+- [x] `.github/copilot-instructions.md`: review rubric only.
+- [x] `.claude/settings.json`: deny agent edits to its own settings.
+- [x] `CLAUDE.md`: new testing/process rules, one line each; incidents behind
       them in `docs/guides/testing.md`. Comment rules pointer.
-- [ ] PR template: Why + test layer.
-- [ ] README: checklist uses `bin/init.sh` + `bin/setup-github.sh`.
+- [x] PR template: Why + test layer.
+- [x] README: checklist uses `bin/init.sh` + `bin/setup-github.sh`.
 
 ## Backlog (considered, not now)
 
