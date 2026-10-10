@@ -108,6 +108,8 @@ Next:
   - update the holder and year in LICENSE
   - $([ "$GITHUB" = 1 ] && echo "review the setup-github output above" || echo "run bin/setup-github.sh to apply the ruleset and repo settings")
   - adjust tsconfig.json for the project type (last section of CLAUDE.md)
+  - keep .github/workflows/e2e.yml: the ruleset requires its check (or set
+    SETUP_REQUIRED_CHECKS=gate when running bin/setup-github.sh without it)
   - npm run check, then commit
   - with the first real code: delete src/index.ts and its test, and set the
     coverage floors in vitest.config.ts ~1 point under measured, once

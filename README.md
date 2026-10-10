@@ -32,7 +32,9 @@ npm run check
    [quality gates](docs/guides/quality-gates.md#coverage-floor-and-drift-ratchet)).
 6. Delete what you do not need: `tests/e2e/`, and the PR-review scripts in
    `bin/` if you skip the AI review loop. Keep `scripts/` and
-   `bin/comment-density.sh`: `npm run check` runs them.
+   `bin/comment-density.sh`: `npm run check` runs them. Keep `e2e.yml` even
+   while dormant: `bin/setup-github.sh` requires its `e2e / e2e` check. If you
+   delete it, run setup with `SETUP_REQUIRED_CHECKS=gate`.
 
 `bin/setup-github.sh` stays and is safe to re-run whenever settings drift.
 
