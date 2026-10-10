@@ -131,9 +131,8 @@ fi
 # push can carry a draft-era SKIP straight through branch protection with the check never having
 # run on the merging commit. (Found the hard way in the repo this script came from.)
 #
-# This repo has no draft-skipped job yet: CI runs one `check` job on every PR, drafts included, so
-# the gate is dormant. Set DRAFT_SKIPPED_CHECK to the job's rollup name (e.g. "e2e (Playwright)")
-# when one is added — do not delete the gate, it exists because this exact hole shipped once.
+# Set DRAFT_SKIPPED_CHECK to the caller's job name (here `e2e`). A reusable-workflow job reports as
+# "<job> / <inner>" when it runs but as plain "<job>" when skipped, so both names are matched.
 #
 # Fail CLOSED, like the other two gates: a lookup failure is not permission to proceed.
 # Sorted by startedAt, NOT array order: the rollup lists a draft-era SKIP alongside a newer run, and
@@ -141,7 +140,7 @@ fi
 DRAFT_SKIPPED_CHECK="${DRAFT_SKIPPED_CHECK:-}"
 if [ -n "$DRAFT_SKIPPED_CHECK" ]; then
   if e2e_state="$(gh pr view "$PR" --json isDraft,statusCheckRollup \
-    --jq "[.isDraft, ([.statusCheckRollup[]? | select(.name == \"$DRAFT_SKIPPED_CHECK\")] | sort_by(.startedAt // \"\") | last | (.conclusion // .status // \"RUNNING\") // \"RUNNING\")] | @tsv" 2>/dev/null)"; then
+    --jq "[.isDraft, ([.statusCheckRollup[]? | select(.name == \"$DRAFT_SKIPPED_CHECK\" or ((.name // \"\") | startswith(\"$DRAFT_SKIPPED_CHECK / \")))] | sort_by(.startedAt // \"\") | last | if . == null then \"MISSING\" else (.conclusion // .status // \"RUNNING\") end)] | @tsv" 2>/dev/null)"; then
     is_draft="$(printf '%s' "$e2e_state" | cut -f1)"
     e2e_conclusion="$(printf '%s' "$e2e_state" | cut -f2)"
   else

@@ -25,6 +25,7 @@ case "\$*" in
   *"repo view"*)          echo "acme/widgets" ;;
   *"pulls/"*"/comments"*) $comments_cmd ;;
   *"pr checks"*)          echo "pass" ;;
+  *"pr view"*)            while [ \$# -gt 0 ]; do [ "\$1" = "--jq" ] && { jq -r "\$2" <<<"\${ROLLUP_JSON:-{\}}"; exit; }; shift; done ;;
   *"pr comment"*)         echo "POSTED: \$*" ;;
   *)                      echo "" ;;
 esac
@@ -98,6 +99,31 @@ make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewe
 code="$(run_gate 42 --ack-suppressed --lessons "stated")"
 assert_eq "3" "$code" "a failed comments fetch refuses to post (unknown is not zero)"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+
+# 10. A reusable-workflow e2e reports as "e2e / e2e" once it runs, but its draft-era skip as plain
+# "e2e": the newer real run must count, or every ready PR is refused.
+CLEAN="printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'"
+make_gh_stub "$CLEAN"
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"},{"name":"e2e / e2e","conclusion":"SUCCESS","startedAt":"2026-10-10T17:01:00Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "0" "$code" "a ready PR whose e2e ran after its draft-era skip posts"
+assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
+
+# 11. Paired control for 10: the draft-era skip alone still refuses.
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "3" "$code" "a ready PR with only the draft-era e2e skip refuses"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+
+# 12. A skip of the reusable run itself is a skip too.
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e / e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T17:01:00Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "3" "$code" "a skipped 'e2e / e2e' refuses"
+
+# 13. No e2e at all on a ready PR is missing, not fine.
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"gate","conclusion":"SUCCESS","startedAt":"2026-10-10T17:01:00Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "3" "$code" "a ready PR with no e2e check refuses"
 
 rm -rf "$STUB_DIR"
 test_summary
