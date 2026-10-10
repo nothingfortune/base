@@ -91,6 +91,21 @@ if [ "${suppressed_n:-0}" -gt 0 ] && [ -z "$ACK" ]; then
   exit 3
 fi
 
+# Refuse before the lessons gate: a takeaway cannot honestly be written for an unread finding.
+if [ "$unaddressed_n" = "?" ]; then
+  echo "Refusing to post: could not fetch review comments for $REPO PR #$PR, so unaddressed" >&2
+  echo "threads are UNKNOWN. A failed fetch is never 'nothing to address'. Retry once the API answers." >&2
+  exit 3
+fi
+
+if [ "$unaddressed_n" -gt 0 ]; then
+  echo "Refusing to post: ${unaddressed_n} bot review thread(s) on $REPO PR #$PR have no reply from us." >&2
+  echo >&2
+  echo "List them with:  bin/pr-unaddressed.sh $PR" >&2
+  echo "address each one, reply in-thread, then re-run this." >&2
+  exit 3
+fi
+
 # Findings demand a takeaway. A review that surfaced bugs is only half-processed once the code is
 # fixed — the class of bug is still open until the testing strategy (or a test) closes it, so this
 # refuses to declare the loop done without one. Counts every top-level bot finding (inline threads
@@ -154,11 +169,8 @@ total="$(  printf '%s\n' "$buckets" | grep -c .          || true)"
 blocked="$(printf '%s\n' "$buckets" | grep -cxE 'fail|cancel' || true)"
 pending="$(printf '%s\n' "$buckets" | grep -cx  'pending'     || true)"
 
-if [ "$unaddressed_n" = "?" ]; then
-  verdict="Reviews processed, but **couldn't fetch the review comments to verify threads** (gh api error) — verify replies + CI manually before merging."
-elif [ "$unaddressed_n" -gt 0 ]; then
-  verdict="**${unaddressed_n} bot review thread(s) still lack a reply from us** — run \`bin/pr-unaddressed.sh $PR\` and reply in-thread before calling this done."
-elif [ "${total:-0}" -eq 0 ]; then
+# Every thread is answered past the gates above, so the verdict is about CI only.
+if [ "${total:-0}" -eq 0 ]; then
   verdict="Reviews processed. **No CI checks reported yet** — verify CI is green before merging."
 elif [ "${blocked:-0}" -gt 0 ]; then
   verdict="Reviews processed, but **${blocked} CI check(s) failing/cancelled** — not ready to merge yet."
@@ -168,19 +180,15 @@ else
   verdict="Reviews processed and **CI is green — good to merge.** ✅"
 fi
 
-if [ "$unaddressed_n" = "0" ]; then
-  body="🤖 ${verdict}
+body="🤖 ${verdict}
 
 All Codex & GitHub Copilot review feedback has been addressed and replied to in-thread."
-  if [ "$suppressed_n" != "?" ] && [ "${suppressed_n:-0}" -gt 0 ]; then
-    # Say so explicitly: these were handled without a thread, so the claim above would otherwise
-    # be resting on evidence a reader cannot check.
-    body="${body}
+if [ "$suppressed_n" != "?" ] && [ "${suppressed_n:-0}" -gt 0 ]; then
+  # Say so explicitly: these were handled without a thread, so the claim above would otherwise
+  # be resting on evidence a reader cannot check.
+  body="${body}
 Includes ${suppressed_n} finding(s) filed in collapsed \"Suppressed comments\" blocks, which have no
 thread to reply in — those are answered in a PR comment instead."
-  fi
-else
-  body="🤖 ${verdict}"
 fi
 if [ -n "$LESSONS" ]; then
   body="${body}

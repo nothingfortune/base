@@ -13,14 +13,17 @@ STUB_DIR="$(mktemp -d)"
 
 # $1 = how the reviews endpoint behaves: "fail" | a JSON payload
 # $2 = (optional) JSON for the inline review-comments endpoint — default none
+# $3 = (optional) "fail" to make the review-comments endpoint error instead of answering
 make_gh_stub() {
   local comments_json="${2:-[]}"
+  local comments_cmd="printf '%s' '$comments_json'"
+  [ "${3:-}" = "fail" ] && comments_cmd="exit 1"
   cat > "$STUB_DIR/gh" <<EOF
 #!/usr/bin/env bash
 case "\$*" in
   *"pulls/"*"/reviews"*)  $1 ;;
   *"repo view"*)          echo "acme/widgets" ;;
-  *"pulls/"*"/comments"*) printf '%s' '$comments_json' ;;
+  *"pulls/"*"/comments"*) $comments_cmd ;;
   *"pr checks"*)          echo "pass" ;;
   *"pr comment"*)         echo "POSTED: \$*" ;;
   *)                      echo "" ;;
@@ -75,6 +78,26 @@ code="$(run_gate 42 --lessons "strict calendar dates are now a Testing Rule")"
 assert_eq "0" "$code" "findings + --lessons posts"
 assert_contains "$STUB_DIR/out" "Testing takeaways" "...and the comment body carries the takeaways section"
 assert_contains "$STUB_DIR/out" "strict calendar dates" "...with the supplied text"
+
+# 7. An unanswered bot thread refuses even with --lessons, so the lessons gate cannot mask it.
+UNANSWERED='[{"id":1,"in_reply_to_id":null,"user":{"login":"chatgpt-codex-connector[bot]"},"body":"a P1 nobody answered"}]'
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$UNANSWERED"
+code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
+assert_eq "3" "$code" "an unaddressed bot thread refuses to post"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+assert_contains "$STUB_DIR/out" "pr-unaddressed.sh" "...and names the tool that lists them"
+
+# 8. Paired control for 7: the only difference is that the thread has our reply.
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$FINDINGS"
+code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
+assert_eq "0" "$code" "the same PR posts once that thread has our reply"
+assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
+
+# 9. A failed comments fetch is unknown, not zero.
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "[]" fail
+code="$(run_gate 42 --ack-suppressed --lessons "stated")"
+assert_eq "3" "$code" "a failed comments fetch refuses to post (unknown is not zero)"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
 rm -rf "$STUB_DIR"
 test_summary
