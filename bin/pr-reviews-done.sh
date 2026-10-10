@@ -137,10 +137,11 @@ fi
 # Fail CLOSED, like the other two gates: a lookup failure is not permission to proceed.
 # Sorted by startedAt, NOT array order: the rollup lists a draft-era SKIP alongside a newer run, and
 # taking `last` picked the older of the two — reporting SKIPPED while the real run was in progress.
+# A run not yet started (startedAt null, or gh's zero time 0001-01-01) is the newest, so it sorts last.
 DRAFT_SKIPPED_CHECK="${DRAFT_SKIPPED_CHECK:-}"
 if [ -n "$DRAFT_SKIPPED_CHECK" ]; then
   if e2e_state="$(gh pr view "$PR" --json isDraft,statusCheckRollup \
-    --jq "[.isDraft, ([.statusCheckRollup[]? | select(.name == \"$DRAFT_SKIPPED_CHECK\" or ((.name // \"\") | startswith(\"$DRAFT_SKIPPED_CHECK / \")))] | sort_by(.startedAt // \"\") | last | if . == null then \"MISSING\" else (.conclusion // .status // \"RUNNING\") end)] | @tsv" 2>/dev/null)"; then
+    --jq "[.isDraft, ([.statusCheckRollup[]? | select(.name == \"$DRAFT_SKIPPED_CHECK\" or ((.name // \"\") | startswith(\"$DRAFT_SKIPPED_CHECK / \")))] | sort_by(.startedAt // \"\" | if . == \"\" or startswith(\"0001-\") then \"9999\" else . end) | last | if . == null then \"MISSING\" else (.conclusion // .status // \"RUNNING\") end)] | @tsv" 2>/dev/null)"; then
     is_draft="$(printf '%s' "$e2e_state" | cut -f1)"
     e2e_conclusion="$(printf '%s' "$e2e_state" | cut -f2)"
   else

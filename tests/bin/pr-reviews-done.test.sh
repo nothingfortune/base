@@ -125,5 +125,12 @@ ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"gate","conclusion":"
 code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
 assert_eq "3" "$code" "a ready PR with no e2e check refuses"
 
+# 14. A run queued on ready_for_review has no start time yet; it is still newer than the draft skip.
+for unset_start in 'null' '"0001-01-01T00:00:00Z"'; do
+  ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"},{"name":"e2e / e2e","conclusion":"","status":"QUEUED","startedAt":'"$unset_start"'}]}'
+  code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+  assert_eq "0" "$code" "a queued e2e run (startedAt $unset_start) outranks the draft-era skip"
+done
+
 rm -rf "$STUB_DIR"
 test_summary
