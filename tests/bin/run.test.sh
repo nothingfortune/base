@@ -57,4 +57,14 @@ left="$(pgrep -f 'sleep 13.7' | grep -c . || true)"
 pkill -f 'sleep 13.7' 2>/dev/null
 assert_eq "0" "$left" "a TERMed runner leaves none of the suite's children running"
 
+# A suite shares the runner's process group: a background group is stopped by SIGTTIN on a tty read.
+suite "$TMP/pgrp" pgrp.test.sh "ps -o pgid= -p \$\$ -p \$PPID | tr -d ' ' | sort -u | wc -l | tr -d ' ' >'$TMP/pgids'"
+bash "$RUNNER" "$TMP/pgrp" >/dev/null 2>&1
+assert_eq "1" "$(cat "$TMP/pgids")" "a suite runs in the runner's process group, keeping terminal input"
+
+# ...and still reads the runner's stdin.
+suite "$TMP/stdin" stdin.test.sh 'read -r v; [ "$v" = hello ]'
+echo hello | bash "$RUNNER" "$TMP/stdin" >/dev/null 2>&1; rc=$?
+assert_eq "0" "$rc" "a suite reads the runner's stdin"
+
 test_summary

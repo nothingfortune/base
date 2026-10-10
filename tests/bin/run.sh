@@ -17,11 +17,14 @@ heartbeat() { # <name> <start-epoch>
   done
 }
 hb=""; child=""
-# Job control gives each background job its own process group, so one kill reaches a whole suite tree.
-set -m
+tree() { # <pid>: the pid and all its descendants, gathered before any is killed
+  local c; echo "$1"; for c in $(pgrep -P "$1"); do tree "$c"; done
+}
+# Not process groups (set -m): a background group is stopped by SIGTTIN when a suite reads the tty.
+stop_all() { kill $(for p in $hb $child; do tree "$p"; done) 2>/dev/null; }
 # A signal must take the heartbeat and suite with it: orphans keep writing and hold stdout open.
-trap 'kill -- ${hb:+"-$hb"} ${child:+"-$child"} 2>/dev/null; exit 143' TERM
-trap 'kill -- ${hb:+"-$hb"} ${child:+"-$child"} 2>/dev/null; exit 130' INT
+trap 'stop_all; exit 143' TERM
+trap 'stop_all; exit 130' INT
 for t in "$DIR"/*.test.sh; do
   [ -f "$t" ] || continue
   name="$(basename "$t")"
