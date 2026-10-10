@@ -54,7 +54,11 @@ the gates below each justify the dependency they add.
 - [x] Docs integrity test: relative links and backticked repo paths in living
       docs must resolve (dollyVision `check-doc-links` + outerReach
       `docs-paths`); also runs in CI's doc-only lane.
-- [x] knip dead-code gate.
+- [x] knip dead-code gate (TS/JS only; dead shell code in `bin/` is not
+      detected).
+- [x] Monolith limits: ESLint `max-lines` 400 / `max-lines-per-function` 150
+      on `src/` and `scripts/`, 600-line test files (dollyVision 2026-09-26
+      review; jarvis review row 4.8). Added after the plan closed, per user.
 - [x] Tracked-dump guard: `.gitignore` patterns + test failing on tracked
       `*.sql`, `*.dump`, `*.sqlite`, archives (outerReach repo-hygiene gate E).
 
@@ -94,8 +98,13 @@ the gates below each justify the dependency they add.
   setup-github's warning instead.
 - jscpd clone detection, shell coverage (`coverage-shell.sh`),
   `tsconfig.test.json`, entry-point convention, committed-config parse test.
-- `timeout-minutes` inside `nothingfortune/workflows` reusable jobs (other
-  repo).
+- In `nothingfortune/workflows` (other repo; needs its own PR, a v1 tag
+  move and pin bumps here):
+  - `timeout-minutes` inside the reusable jobs.
+  - Expose `lint.yml`'s actionlint + security-invariants auditor as a
+    reusable workflow so callers like base audit their own workflow files.
+  - `dependabot-automerge.yml` merges with `--merge`; base squash-merges
+    everything else, so switch it to `--squash`.
 - Decision / design-gaps / lessons-under-test / template-feedback log skeletons — empty logs in a
   template are noise; add per project.
 
