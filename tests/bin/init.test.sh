@@ -10,6 +10,8 @@ fresh_clone() { # <dest> — the working tree as a clone would get it, minus nod
   mkdir -p "$1"
   (cd "$ROOT" && git ls-files -z --cached --others --exclude-standard | tar --null -T - -cf -) | tar -xf - -C "$1"
   git -C "$1" init -q -b main
+  # Committed like a real clone, so init's deletions are tracked-but-missing files.
+  git -C "$1" add -A && git -C "$1" -c user.email=t@t -c user.name=t commit -q --no-verify -m clone
 }
 
 echo "init:"
@@ -38,6 +40,8 @@ assert_eq "1" "$([ -f "$TMP/a/docs/toDo/completed/.gitkeep" ] && echo 1 || echo 
 assert_eq "0" "$([ -e "$TMP/a/bin/init.sh" ] || [ -e "$TMP/a/tests/bin/init.test.sh" ] && echo 1 || echo 0)" "init.sh and its test remove themselves"
 assert_eq "1" "$([ -f "$TMP/a/bin/setup-github.sh" ] && echo 1 || echo 0)" "...leaving setup-github.sh for re-runs"
 assert_not_contains "$TMP/out" "residue" "...after its residue check came back clean"
+(cd "$TMP/a" && node scripts/check-docs.mjs >"$TMP/docs.out" 2>&1); code=$?
+assert_eq "0" "$code" "docs:check passes straight after init, before anything is staged"
 
 # 3. Title defaults to the name exactly as given.
 fresh_clone "$TMP/b"
