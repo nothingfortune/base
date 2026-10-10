@@ -204,3 +204,31 @@ files and Unused devDependencies. Reverted afterwards.
 **Origin:** jarvis-ur-ops-automation runs knip in its `validate` gate
 (`check:dead`); its 2026-09-23 code review (item 3.6) recorded the test-entry
 blind spot above.
+
+## Tracked dumps and archives
+
+**Enforces:** `tests/bin/tracked-dumps.test.sh` (part of `npm run test:bin`)
+fails when `git ls-files` lists a file ending in `.sql`, `.sql.gz`, `.dump`,
+`.sqlite`, `.sqlite3`, `.db`, `.tar`, `.tar.gz`, `.tgz` or `.zip`
+(case-insensitive), and when `.gitignore` stops ignoring any of those
+extensions.
+
+**Why:** a database dump carries real user data (password hashes, emails),
+and an archive hides whatever it contains from review. Once committed it
+lives in every clone and fork, and removing it means rewriting history. The
+`.gitignore` patterns stop the accidental `git add .`; the test catches a
+force-add or a pattern someone deletes.
+
+**Updating:** an intentional fixture goes in the `ALLOWED` array at the top
+of the test as a repo-relative path, added with `git add -f`. Keep the
+extension list in the test and the `.gitignore` block in sync; the test
+checks the second against the first.
+
+**Proof:** the test force-adds `dump.sql`, `data/app.sqlite3`,
+`backup.tar.gz`, `EXPORT.ZIP` and an allowlisted `fixtures/seed.sql` to a
+throwaway repo and requires exactly the first four back; a control repo of
+lookalike names (`database.ts`, `dump.sql.md`) must report nothing.
+Force-adding `probe.sql` to this repo made the suite fail naming it.
+
+**Origin:** `outerReach/bin/repo-hygiene.sh` gate E (#387/#389), which bans
+tracked dumps because a WordPress dump carries `wp_users`.
