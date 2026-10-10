@@ -48,8 +48,8 @@ This is a template base repo, this file needs to be updated to match specific pr
 ## Testing
 
 - Every behavior change ships with a test in the same commit.
-- Unit tests live in `tests/unit/` and mirror `src/` paths: `src/lib/parse.ts`
-  becomes `tests/unit/lib/parse.test.ts`.
+- Unit tests live in `tests/unit/` and mirror `src/` paths: `src/lib/<name>.ts`
+  becomes `tests/unit/lib/<name>.test.ts`.
 - End-to-end tests live in `tests/e2e/` and are Playwright. Vitest does not run
   them. Add Playwright per project; the template does not install it.
 - Test observable behavior through public interfaces. If a test needs access to

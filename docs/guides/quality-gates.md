@@ -127,3 +127,49 @@ fail.
 3 points adrift by 2026-08-17, about 60 statements and 50 branches that could
 go untested with a green gate. It had happened twice, so the fix was a
 mechanism rather than a reminder.
+
+## Docs integrity
+
+**Enforces:** `npm run docs:check` (`scripts/check-docs.mjs`) fails when:
+
+- a relative markdown link in any tracked `*.md` does not resolve to a file
+  or directory. URI schemes, scheme-relative URLs and pure anchors are
+  skipped; a `#fragment` is stripped before resolving; a link that escapes
+  the repo with `..` is broken by definition.
+- a backticked repo path (a span starting `src/`, `tests/`, `bin/`,
+  `scripts/`, `docs/`, `.github/`, `.githooks/` or `.vscode/`) in a living
+  doc does not exist. Living docs are `README.md`, `CLAUDE.md`, `AGENTS.md`
+  and `docs/guides/**`.
+
+Fenced code blocks are skipped for both checks, and inline code is not
+scanned for links. Spans with placeholders (`<name>`, `*`, `{}`, `...`) are
+not paths. Generated paths (`node_modules`, `dist`, `build`, `coverage`) and
+`docs/designs/handoff/`, which `deploy-design-preview.yml` waits for, are
+absent by design and always pass.
+
+**Why:** a renamed or moved file leaves dangling references, and nothing else
+in `check` reads prose. Dated plans and designs under `docs/toDo/` and
+`docs/designs/` are records of their time, so the paths they mention may age;
+only their links must keep working. The check runs in `check` and in CI's
+doc-only lane, because a doc-only PR is exactly where links break and
+`check` is skipped there.
+
+**Updating:** fix the doc or the path. To exempt a path that is absent by
+design, extend `ABSENT_BY_DESIGN` in the script; to make a new folder of
+living docs checked, extend `LIVING`.
+
+**Proof:** `tests/unit/scripts/check-docs.test.ts` builds a throwaway git
+repo with a broken link, a missing backticked path, a repo-escaping link and
+a broken record link, and requires each to be reported, with controls
+(external links, anchors, fenced and inline code, placeholders, a record's
+aged path, an untracked file) that must stay quiet.
+
+**Origin:** a merge of `dollyVision/scripts/check-doc-links.mjs` (the
+relative-link half, its `docs:links` gate) and
+`outerReach/scripts/docs-paths.test.mts` (the backticked-path half, policing
+only the living tier). Neither source names a single motivating PR; both
+guard the drift class where a rename leaves references dangling. Its first
+run here caught `CLAUDE.md` naming an illustrative `parse.ts` under `src/lib/`
+that does not exist, and while this guide was written it caught the guide citing
+sibling-repo paths as if they were this repo's. The CLAUDE.md example now
+uses a `<name>` placeholder.

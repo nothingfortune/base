@@ -69,6 +69,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run format:check
+      - run: npm run docs:check
 
   # The REQUIRED aggregate. Branch protection requires `gate` (not check
   # directly): on a doc-only PR `check` skips — and a skipped check satisfies
