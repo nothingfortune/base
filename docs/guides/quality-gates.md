@@ -288,5 +288,10 @@ Dependabot because Vitest 5 made Stryker run zero tests per mutant
 ([stryker-js#6210](https://github.com/stryker-mutator/stryker-js/issues/6210));
 take one deliberately and confirm `npm run test:mutation` still reports kills.
 
+**Override:** `package.json` `overrides` lifts `qs` under `typed-rest-client`
+to `^6.16.0`. Stryker 10 depends on `typed-rest-client` 2.x, which pins a `qs`
+with open advisories; delete the override once Stryker moves to
+`typed-rest-client` 3, which needs no override.
+
 **Origin:** dollyVision (`stryker.config.mjs`, `mutation.yml`; #173 dropped the weekly schedule for a dispatched glob because the full scope does not fit a job; #215 pinned Vitest after a major broke the runner) and
 jarvis-ur-ops-automation (manual, advisory workflow).
