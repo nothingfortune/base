@@ -45,3 +45,41 @@ any repo. dollyVision built it; its PR #174 then fixed the scanner to walk
 `getChildren` so comments before a closing `}` and at end of file are
 counted. This port keeps all of its test cases and adds root-`src/`
 discovery for single-package repos.
+
+## Test integrity (ESLint)
+
+**Enforces:** in `tests/**` and every `*.test.*` file, `@vitest/eslint-plugin`
+errors on `expect-expect`, `require-to-throw-message`,
+`no-conditional-expect`, `valid-expect` (`maxArgs: 2`), `no-identical-title`,
+`no-focused-tests` and `no-disabled-tests`. Everywhere, `no-restricted-syntax`
+bans a double assertion (`x as unknown as T`). `npm run lint` runs with
+`--max-warnings 0`, so a warning fails the gate too.
+
+**Why:** each rule bans a shape of test that is green while checking nothing:
+a test with no assertion, a `toThrow()` that accepts any error (including one
+from the test's own setup), an assertion inside a `catch` that never runs when
+nothing throws, an un-awaited async matcher, a focused or skipped test that
+silently stops covering. `maxArgs: 2` because vitest, unlike jest, takes a
+failure message as `expect`'s second argument. A double assertion tells the
+compiler to stop checking; narrow the value instead.
+
+**Helpers:** `tests/support/thrown.ts` exports `thrown()` and `thrownAsync()`.
+They run a call, require it to throw (or reject), and return the error for
+assertions on its shape. There is no path out of them without a throw, so no
+assertion sits in a `catch` and none can be forgotten. Prefer
+`expect(...).toThrow(<matcher>)` when the message alone is the assertion.
+
+**Proof:** `tests/unit/eslint-config.test.ts` lints a planted defect for every
+rule through ESLint's Node API and requires the rule to fire, plus clean
+controls that must produce no messages.
+
+**Updating:** keep every rule at `error`. A `warn` only bites while
+`--max-warnings 0` stays on the lint script; drop the flag and it enforces
+nothing. A genuine exception takes an inline
+`eslint-disable-next-line <rule> -- <why>`.
+
+**Incident:** dollyVision #77 (Codex review): `no-disabled-tests` at `warn`
+let a committed `.skip` reach main because `eslint .` exits 0 on warnings.
+dollyVision #79 replaced try/catch assertion blocks, safe only while each one
+remembered an `expect.unreachable` guard, with `thrown()`/`thrownAsync()`, which
+let `no-conditional-expect` become an error.
