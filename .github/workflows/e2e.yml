@@ -15,8 +15,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+# PRs supersede their own runs; every main push gets its own group so none is cancelled.
 concurrency:
-  group: e2e-${{ github.ref }}
+  group: e2e-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -25,6 +26,7 @@ permissions:
 jobs:
   scope:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       doc_only: ${{ steps.scope.outputs.doc_only }}
     steps:
@@ -44,4 +46,4 @@ jobs:
   e2e:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false) }}
-    uses: nothingfortune/workflows/.github/workflows/e2e.yml@1f28f5a63001481511a35d5d278ec2198a2da245 # v1
+    uses: nothingfortune/workflows/.github/workflows/e2e.yml@102318a26f52e74480fc0006317dbc6bb4b14897 # v1.1.1

@@ -91,6 +91,21 @@ if [ "${suppressed_n:-0}" -gt 0 ] && [ -z "$ACK" ]; then
   exit 3
 fi
 
+# Refuse before the lessons gate: a takeaway cannot honestly be written for an unread finding.
+if [ "$unaddressed_n" = "?" ]; then
+  echo "Refusing to post: could not fetch review comments for $REPO PR #$PR, so unaddressed" >&2
+  echo "threads are UNKNOWN. A failed fetch is never 'nothing to address'. Retry once the API answers." >&2
+  exit 3
+fi
+
+if [ "$unaddressed_n" -gt 0 ]; then
+  echo "Refusing to post: ${unaddressed_n} bot review thread(s) on $REPO PR #$PR have no reply from us." >&2
+  echo >&2
+  echo "List them with:  bin/pr-unaddressed.sh $PR" >&2
+  echo "address each one, reply in-thread, then re-run this." >&2
+  exit 3
+fi
+
 # Findings demand a takeaway. A review that surfaced bugs is only half-processed once the code is
 # fixed — the class of bug is still open until the testing strategy (or a test) closes it, so this
 # refuses to declare the loop done without one. Counts every top-level bot finding (inline threads
@@ -116,17 +131,17 @@ fi
 # push can carry a draft-era SKIP straight through branch protection with the check never having
 # run on the merging commit. (Found the hard way in the repo this script came from.)
 #
-# This repo has no draft-skipped job yet: CI runs one `check` job on every PR, drafts included, so
-# the gate is dormant. Set DRAFT_SKIPPED_CHECK to the job's rollup name (e.g. "e2e (Playwright)")
-# when one is added — do not delete the gate, it exists because this exact hole shipped once.
+# Set DRAFT_SKIPPED_CHECK to the caller's job name (here `e2e`). A reusable-workflow job reports as
+# "<job> / <inner>" when it runs but as plain "<job>" when skipped, so both names are matched.
 #
 # Fail CLOSED, like the other two gates: a lookup failure is not permission to proceed.
 # Sorted by startedAt, NOT array order: the rollup lists a draft-era SKIP alongside a newer run, and
 # taking `last` picked the older of the two — reporting SKIPPED while the real run was in progress.
+# A run not yet started (startedAt null, or gh's zero time 0001-01-01) is the newest, so it sorts last.
 DRAFT_SKIPPED_CHECK="${DRAFT_SKIPPED_CHECK:-}"
 if [ -n "$DRAFT_SKIPPED_CHECK" ]; then
   if e2e_state="$(gh pr view "$PR" --json isDraft,statusCheckRollup \
-    --jq "[.isDraft, ([.statusCheckRollup[]? | select(.name == \"$DRAFT_SKIPPED_CHECK\")] | sort_by(.startedAt // \"\") | last | (.conclusion // .status // \"RUNNING\") // \"RUNNING\")] | @tsv" 2>/dev/null)"; then
+    --jq "[.isDraft, ([.statusCheckRollup[]? | select(.name == \"$DRAFT_SKIPPED_CHECK\" or ((.name // \"\") | startswith(\"$DRAFT_SKIPPED_CHECK / \")))] | sort_by(.startedAt // \"\" | if . == \"\" or startswith(\"0001-\") then \"9999\" else . end) | last | if . == null then \"MISSING\" else (.conclusion // .status // \"RUNNING\") end)] | @tsv" 2>/dev/null)"; then
     is_draft="$(printf '%s' "$e2e_state" | cut -f1)"
     e2e_conclusion="$(printf '%s' "$e2e_state" | cut -f2)"
   else
@@ -154,11 +169,8 @@ total="$(  printf '%s\n' "$buckets" | grep -c .          || true)"
 blocked="$(printf '%s\n' "$buckets" | grep -cxE 'fail|cancel' || true)"
 pending="$(printf '%s\n' "$buckets" | grep -cx  'pending'     || true)"
 
-if [ "$unaddressed_n" = "?" ]; then
-  verdict="Reviews processed, but **couldn't fetch the review comments to verify threads** (gh api error) — verify replies + CI manually before merging."
-elif [ "$unaddressed_n" -gt 0 ]; then
-  verdict="**${unaddressed_n} bot review thread(s) still lack a reply from us** — run \`bin/pr-unaddressed.sh $PR\` and reply in-thread before calling this done."
-elif [ "${total:-0}" -eq 0 ]; then
+# Every thread is answered past the gates above, so the verdict is about CI only.
+if [ "${total:-0}" -eq 0 ]; then
   verdict="Reviews processed. **No CI checks reported yet** — verify CI is green before merging."
 elif [ "${blocked:-0}" -gt 0 ]; then
   verdict="Reviews processed, but **${blocked} CI check(s) failing/cancelled** — not ready to merge yet."
@@ -168,19 +180,15 @@ else
   verdict="Reviews processed and **CI is green — good to merge.** ✅"
 fi
 
-if [ "$unaddressed_n" = "0" ]; then
-  body="🤖 ${verdict}
+body="🤖 ${verdict}
 
 All Codex & GitHub Copilot review feedback has been addressed and replied to in-thread."
-  if [ "$suppressed_n" != "?" ] && [ "${suppressed_n:-0}" -gt 0 ]; then
-    # Say so explicitly: these were handled without a thread, so the claim above would otherwise
-    # be resting on evidence a reader cannot check.
-    body="${body}
+if [ "$suppressed_n" != "?" ] && [ "${suppressed_n:-0}" -gt 0 ]; then
+  # Say so explicitly: these were handled without a thread, so the claim above would otherwise
+  # be resting on evidence a reader cannot check.
+  body="${body}
 Includes ${suppressed_n} finding(s) filed in collapsed \"Suppressed comments\" blocks, which have no
 thread to reply in — those are answered in a PR comment instead."
-  fi
-else
-  body="🤖 ${verdict}"
 fi
 if [ -n "$LESSONS" ]; then
   body="${body}

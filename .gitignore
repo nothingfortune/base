@@ -28,5 +28,10 @@ coverage/
 /test-results/
 /blob-report/
 
+# === Agent tooling ===
+# Worktrees are other checkouts; local settings are per-developer.
+.claude/worktrees/
+.claude/settings.local.json
+
 # === Logs ===
 *.log

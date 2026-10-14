@@ -12,4 +12,4 @@ permissions:
 
 jobs:
   auto-merge:
-    uses: nothingfortune/workflows/.github/workflows/dependabot-automerge.yml@1f28f5a63001481511a35d5d278ec2198a2da245 # v1
+    uses: nothingfortune/workflows/.github/workflows/dependabot-automerge.yml@102318a26f52e74480fc0006317dbc6bb4b14897 # v1.1.1

@@ -3,7 +3,7 @@ import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'build/**', 'coverage/**', 'node_modules/**'] },
+  { ignores: ['dist/**', 'build/**', 'coverage/**', 'node_modules/**', '.claude/worktrees/**'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,

@@ -1,11 +1,44 @@
 #!/usr/bin/env bash
-# Run every tests/bin/*.test.sh and aggregate the exit status.
+# Run every *.test.sh in a suites dir and aggregate the exit status.
+# Usage: tests/bin/run.sh [suites-dir]   (default: this directory)
+# HEARTBEAT_SECS   heartbeat interval while one suite runs (default 30)
+# SHELL_TESTS_SKIP comma-separated basenames to skip
 set -uo pipefail
-DIR="$(cd "$(dirname "$0")" && pwd)"
-rc=0
+DIR="${1:-$(cd "$(dirname "$0")" && pwd)}"
+HB="${HEARTBEAT_SECS:-30}"
+rc=0; t0=$(date +%s); n=0; timings=""
+heartbeat() { # <name> <start-epoch>
+  local nap
+  # Kill the sleep too: an orphaned one holds stdout and stalls anyone capturing the runner.
+  trap 'kill "$nap" 2>/dev/null; exit 0' TERM
+  while :; do
+    sleep "$HB" & nap=$!; wait "$nap" || exit 0
+    printf '   … still running %s (%ds)\n' "$1" "$(( $(date +%s) - $2 ))"
+  done
+}
+hb=""; child=""
+tree() { # <pid>: the pid and all its descendants, gathered before any is killed
+  local c; echo "$1"; for c in $(pgrep -P "$1"); do tree "$c"; done
+}
+# Not process groups (set -m): a background group is stopped by SIGTTIN when a suite reads the tty.
+stop_all() { kill $(for p in $hb $child; do tree "$p"; done) 2>/dev/null; }
+# A signal must take the heartbeat and suite with it: orphans keep writing and hold stdout open.
+trap 'stop_all; exit 143' TERM
+trap 'stop_all; exit 130' INT
 for t in "$DIR"/*.test.sh; do
   [ -f "$t" ] || continue
-  echo "== $(basename "$t") =="
-  bash "$t" || rc=1
+  name="$(basename "$t")"
+  case ",${SHELL_TESTS_SKIP:-}," in *",$name,"*) echo "== $name == (skipped: SHELL_TESTS_SKIP)"; continue ;; esac
+  n=$((n+1)); s=$(date +%s)
+  printf '== %s == [%3ds elapsed]\n' "$name" "$(( s - t0 ))"
+  heartbeat "$name" "$s" & hb=$!
+  # Backgrounded so a trapped signal interrupts `wait` at once; <&0 keeps the suite's stdin.
+  bash "$t" <&0 & child=$!
+  if wait "$child"; then verdict="ok"; else verdict="FAIL"; rc=1; fi
+  kill "$hb" 2>/dev/null; wait "$hb" 2>/dev/null; hb=""; child=""
+  d=$(( $(date +%s) - s )); timings="$timings$d $name"$'\n'
+  printf '   %s in %ds\n' "$verdict" "$d"
 done
+printf '\n%d suites in %ds; slowest:\n' "$n" "$(( $(date +%s) - t0 ))"
+printf '%s' "$timings" | sort -rn | head -3 | awk '{printf "   %4ds  %s\n", $1, $2}'
 exit "$rc"

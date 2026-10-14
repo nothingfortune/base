@@ -1,13 +1,36 @@
+# One Monday batch per week. Minor and patch updates arrive grouped in one PR;
+# each major arrives alone so it gets its own review and cannot block the group.
+#
+# Transitive npm dependencies are not covered here; their fixes come from
+# Dependabot security updates (bin/setup-github.sh turns them on) or
+# `npm audit`.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: '04:00'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
     groups:
-      dev-dependencies:
-        dependency-type: development
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: 'chore(deps)'
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: '04:00'
+      timezone: Etc/UTC
+    groups:
+      # One release of the shared workflows bumps every caller file; it arrives as one PR.
+      nothingfortune-workflows:
+        patterns: ['nothingfortune/workflows*']
+      actions-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: 'chore(ci)'

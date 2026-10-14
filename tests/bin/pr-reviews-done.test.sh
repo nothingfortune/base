@@ -13,15 +13,19 @@ STUB_DIR="$(mktemp -d)"
 
 # $1 = how the reviews endpoint behaves: "fail" | a JSON payload
 # $2 = (optional) JSON for the inline review-comments endpoint — default none
+# $3 = (optional) "fail" to make the review-comments endpoint error instead of answering
 make_gh_stub() {
   local comments_json="${2:-[]}"
+  local comments_cmd="printf '%s' '$comments_json'"
+  [ "${3:-}" = "fail" ] && comments_cmd="exit 1"
   cat > "$STUB_DIR/gh" <<EOF
 #!/usr/bin/env bash
 case "\$*" in
   *"pulls/"*"/reviews"*)  $1 ;;
   *"repo view"*)          echo "acme/widgets" ;;
-  *"pulls/"*"/comments"*) printf '%s' '$comments_json' ;;
+  *"pulls/"*"/comments"*) $comments_cmd ;;
   *"pr checks"*)          echo "pass" ;;
+  *"pr view"*)            while [ \$# -gt 0 ]; do [ "\$1" = "--jq" ] && { jq -r "\$2" <<<"\${ROLLUP_JSON:-{\}}"; exit; }; shift; done ;;
   *"pr comment"*)         echo "POSTED: \$*" ;;
   *)                      echo "" ;;
 esac
@@ -75,6 +79,58 @@ code="$(run_gate 42 --lessons "strict calendar dates are now a Testing Rule")"
 assert_eq "0" "$code" "findings + --lessons posts"
 assert_contains "$STUB_DIR/out" "Testing takeaways" "...and the comment body carries the takeaways section"
 assert_contains "$STUB_DIR/out" "strict calendar dates" "...with the supplied text"
+
+# 7. An unanswered bot thread refuses even with --lessons, so the lessons gate cannot mask it.
+UNANSWERED='[{"id":1,"in_reply_to_id":null,"user":{"login":"chatgpt-codex-connector[bot]"},"body":"a P1 nobody answered"}]'
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$UNANSWERED"
+code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
+assert_eq "3" "$code" "an unaddressed bot thread refuses to post"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+assert_contains "$STUB_DIR/out" "pr-unaddressed.sh" "...and names the tool that lists them"
+
+# 8. Paired control for 7: the only difference is that the thread has our reply.
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$FINDINGS"
+code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
+assert_eq "0" "$code" "the same PR posts once that thread has our reply"
+assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
+
+# 9. A failed comments fetch is unknown, not zero.
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "[]" fail
+code="$(run_gate 42 --ack-suppressed --lessons "stated")"
+assert_eq "3" "$code" "a failed comments fetch refuses to post (unknown is not zero)"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+
+# 10. A reusable-workflow e2e reports as "e2e / e2e" once it runs, but its draft-era skip as plain
+# "e2e": the newer real run must count, or every ready PR is refused.
+CLEAN="printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'"
+make_gh_stub "$CLEAN"
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"},{"name":"e2e / e2e","conclusion":"SUCCESS","startedAt":"2026-10-10T17:01:00Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "0" "$code" "a ready PR whose e2e ran after its draft-era skip posts"
+assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
+
+# 11. Paired control for 10: the draft-era skip alone still refuses.
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "3" "$code" "a ready PR with only the draft-era e2e skip refuses"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+
+# 12. A skip of the reusable run itself is a skip too.
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e / e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T17:01:00Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "3" "$code" "a skipped 'e2e / e2e' refuses"
+
+# 13. No e2e at all on a ready PR is missing, not fine.
+ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"gate","conclusion":"SUCCESS","startedAt":"2026-10-10T17:01:00Z"}]}'
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+assert_eq "3" "$code" "a ready PR with no e2e check refuses"
+
+# 14. A run queued on ready_for_review has no start time yet; it is still newer than the draft skip.
+for unset_start in 'null' '"0001-01-01T00:00:00Z"'; do
+  ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"},{"name":"e2e / e2e","conclusion":"","status":"QUEUED","startedAt":'"$unset_start"'}]}'
+  code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+  assert_eq "0" "$code" "a queued e2e run (startedAt $unset_start) outranks the draft-era skip"
+done
 
 rm -rf "$STUB_DIR"
 test_summary
