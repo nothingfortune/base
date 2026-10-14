@@ -21,12 +21,15 @@
     "knip": "knip",
     "check": "npm run typecheck && npm run lint && npm run comment-density && npm run knip && npm run format:check && npm run test:coverage && npm run coverage:drift && npm run test:bin && npm run docs:check",
     "test:bin": "bash tests/bin/run.sh",
-    "postinstall": "git config core.hooksPath >/dev/null 2>&1 || git config core.hooksPath .githooks || true"
+    "postinstall": "git config core.hooksPath >/dev/null 2>&1 || git config core.hooksPath .githooks || true",
+    "test:mutation": "stryker run"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26.2.0",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "@vitest/eslint-plugin": "^1.6.27",
     "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
@@ -34,6 +37,11 @@
     "prettier": "^3.9.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "typed-rest-client": {
+      "qs": "^6.16.0"
+    }
   }
 }

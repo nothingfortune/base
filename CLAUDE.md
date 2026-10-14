@@ -23,6 +23,8 @@ This is a template base repo, this file needs to be updated to match specific pr
 | `npm run coverage:drift`                  | Fails when a floor sits more than 2 points under measured coverage                                   |
 | `npm run test:bin`                        | Bash tests for `bin/` scripts and repo guards                                                        |
 | `npm run docs:check`                      | Relative links and living-doc repo paths resolve                                                     |
+| `npm run test:mutation`                   | Stryker mutation run; informational, never part of `check`                                           |
+| `bin/setup-github.sh [--dry-run]`         | Apply the default-branch ruleset and repo settings; safe to re-run                                   |
 
 What each gate enforces, and how to move its ratchet, is in
 `docs/guides/quality-gates.md`.
@@ -93,6 +95,9 @@ What each gate enforces, and how to move its ratchet, is in
     Cloudflare Pages (main → production, branches → previews). Dormant until
     that path exists; per-project setup is documented in the file (rename
     the Pages project, add `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`).
+  - `mutation.yml` — manual Stryker run (`npm run test:mutation`).
+    Informational: never on PRs, never required; fails only when Stryker
+    kills nothing, which means the runner broke.
 - Dependabot (npm + actions, weekly): minors/patches ride CI; a major that
   fails the gate gets CLOSED with a comment and taken deliberately in a
   dedicated branch — never merged red, never left rotting open.

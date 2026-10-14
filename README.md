@@ -14,22 +14,29 @@ npm run check
 
 ## Using this template
 
-1. Rename `name` in `package.json`; update this README's title and description.
-2. Update the holder and year in `LICENSE`.
-3. Fill in the Project section of `CLAUDE.md`.
-4. Delete the template's own design doc from `docs/designs/` and plan from
-   `docs/toDo/completed/`.
+1. Create a repo from this template, clone it, and run `npm install`.
+2. Run `bin/init.sh <package-name> [--title "Title"] [--github]`. It renames the
+   package, removes the template's own docs (this section included), and with
+   `--github` applies the ruleset and repo settings via `bin/setup-github.sh`
+   (repo settings do not copy from a template). Then it deletes itself and
+   prints the remaining steps:
+3. Fill in the Project section of `CLAUDE.md`, this README's description, and
+   the holder and year in `LICENSE`.
+4. Adjust `tsconfig.json` for the project type — see the last section of
+   `CLAUDE.md`.
 5. Delete the placeholder `src/index.ts` and `tests/unit/index.test.ts` once real
    code exists. In that same first commit with real code, set the coverage
    `thresholds` in `vitest.config.ts` to about 1 point under what
    `npm run test:coverage` measures. This one-time calibration is the only time
    a floor goes down; afterwards floors only rise (see
    [quality gates](docs/guides/quality-gates.md#coverage-floor-and-drift-ratchet)).
-6. Adjust `tsconfig.json` for the project type — see the last section of
-   `CLAUDE.md`.
-7. Delete what you do not need: `tests/e2e/`, and the PR-review scripts in
+6. Delete what you do not need: `tests/e2e/`, and the PR-review scripts in
    `bin/` if you skip the AI review loop. Keep `scripts/` and
-   `bin/comment-density.sh`: `npm run check` runs them.
+   `bin/comment-density.sh`: `npm run check` runs them. Keep `e2e.yml` even
+   while dormant: `bin/setup-github.sh` requires its `e2e / e2e` check. If you
+   delete it, run setup with `SETUP_REQUIRED_CHECKS=gate`.
+
+`bin/setup-github.sh` stays and is safe to re-run whenever settings drift.
 
 ## Scripts
 
@@ -48,6 +55,7 @@ npm run check
 | `npm run test:coverage`   | Vitest with coverage floors                                    |
 | `npm run coverage:drift`  | Coverage floors must track measured coverage                   |
 | `npm run test:bin`        | Bash tests for `bin/` scripts and repo guards                  |
+| `npm run test:mutation`   | Stryker mutation testing (informational)                       |
 | `npm run docs:check`      | Markdown links and living-doc paths resolve                    |
 
 The gates are explained in [quality gates](docs/guides/quality-gates.md).

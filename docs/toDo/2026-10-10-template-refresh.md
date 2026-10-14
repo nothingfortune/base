@@ -55,18 +55,19 @@ the gates below each justify the dependency they add.
 
 ## PR 3 — bootstraps
 
-- [ ] `bin/setup-github.sh`: idempotent ruleset on the default branch
+- [x] `bin/setup-github.sh`: idempotent ruleset on the default branch
       requiring `gate` + `e2e / e2e`, auto-merge, delete-branch-on-merge,
       vulnerability alerts + Dependabot security updates, secrets reminder;
       warns when the repo cannot enforce rulesets (private on a free plan).
       Repo settings do not copy from a template — this is how a clone gets
       them.
-- [ ] Mutation testing: Stryker + vitest runner, `npm run test:mutation`,
+- [x] Mutation testing: Stryker + vitest runner, `npm run test:mutation`,
       `mutation.yml` (`workflow_dispatch`, informational, report artifact),
       dependabot ignore for vitest majors (dollyVision #215).
-- [ ] `bin/init.sh <name>`: rename package + lockfile, strip the template
-      banner, delete the template's own plans/design; `--check` residue audit
-      (fleetDemo F1/F2).
+- [x] `bin/init.sh <name> [--title] [--github]`: one-shot setup — renames
+      package + lockfile, strips the template how-to/banner/plans/designs,
+      optionally runs setup-github, residue-checks, then deletes itself
+      (fleetDemo F1/F2; per user: a clone starts clean).
 
 ## PR 4 — agent and docs surface
 
@@ -77,7 +78,6 @@ the gates below each justify the dependency they add.
       them in `docs/guides/testing.md`. Comment rules pointer.
 - [ ] PR template: Why + test layer.
 - [ ] README: checklist uses `bin/init.sh` + `bin/setup-github.sh`.
-- [ ] `TEMPLATE-FEEDBACK.md` log so clones report back.
 
 ## Backlog (considered, not now)
 
@@ -91,7 +91,7 @@ the gates below each justify the dependency they add.
   `tsconfig.test.json`, entry-point convention, committed-config parse test.
 - `timeout-minutes` inside `nothingfortune/workflows` reusable jobs (other
   repo).
-- Decision / design-gaps / lessons-under-test log skeletons — empty logs in a
+- Decision / design-gaps / lessons-under-test / template-feedback log skeletons — empty logs in a
   template are noise; add per project.
 
 ## Rejected
