@@ -10,31 +10,40 @@ This is a template base repo, this file needs to be updated to match specific pr
 
 `npm run check` is the gate. It must pass before you claim work is done.
 
-| Command                                   | Purpose                                 |
-| ----------------------------------------- | --------------------------------------- |
-| `npm run check`                           | typecheck + lint + format check + tests |
-| `npm run typecheck`                       | `tsc --noEmit`                          |
-| `npm run lint` / `npm run lint:fix`       | ESLint                                  |
-| `npm run format` / `npm run format:check` | Prettier                                |
-| `npm test` / `npm run test:watch`         | Vitest                                  |
-| `npm run test:bin`                        | Bash tests for `bin/` scripts           |
+| Command                                   | Purpose                                                                                              |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `npm run check`                           | typecheck + lint + comment density + knip + format check + coverage + drift + bin tests + docs check |
+| `npm run typecheck`                       | `tsc --noEmit`                                                                                       |
+| `npm run lint` / `npm run lint:fix`       | ESLint, `--max-warnings 0`                                                                           |
+| `npm run comment-density`                 | Multi-line comment blocks must equal `comment-density-baseline.json`                                 |
+| `npm run knip`                            | Unused files, exports and dependencies                                                               |
+| `npm run format` / `npm run format:check` | Prettier                                                                                             |
+| `npm test` / `npm run test:watch`         | Vitest (the fast loop; no coverage)                                                                  |
+| `npm run test:coverage`                   | Vitest with v8 coverage against the floors in `vitest.config.ts`                                     |
+| `npm run coverage:drift`                  | Fails when a floor sits more than 2 points under measured coverage                                   |
+| `npm run test:bin`                        | Bash tests for `bin/` scripts and repo guards                                                        |
+| `npm run docs:check`                      | Relative links and living-doc repo paths resolve                                                     |
+
+What each gate enforces, and how to move its ratchet, is in
+`docs/guides/quality-gates.md`.
 
 ## Layout
 
-| Path            | Contents                                                                   |
-| --------------- | -------------------------------------------------------------------------- |
-| `src/`          | Application code. Entry point is `src/index.ts`.                           |
-| `src/lib/`      | Reusable logic with no framework or IO coupling.                           |
-| `src/types/`    | Types shared across modules. Types used in one module stay in that module. |
-| `src/config/`   | Configuration loading and environment parsing.                             |
-| `tests/unit/`   | Vitest specs, mirroring `src/` paths.                                      |
-| `tests/e2e/`    | Playwright specs. Not installed by default.                                |
-| `bin/`          | Shell scripts (build helpers, AI PR-review loop).                          |
-| `tests/bin/`    | Bash tests for `bin/` scripts, run by `tests/bin/run.sh`.                  |
-| `scripts/`      | Repo-local Node/TS tooling.                                                |
-| `docs/designs/` | Design docs, named `YYYY-MM-DD-topic-design.md`.                           |
-| `docs/guides/`  | How-to documentation.                                                      |
-| `docs/toDo/`    | Active plans. Move to `docs/toDo/completed/` when finished.                |
+| Path             | Contents                                                                      |
+| ---------------- | ----------------------------------------------------------------------------- |
+| `src/`           | Application code. Entry point is `src/index.ts`.                              |
+| `src/lib/`       | Reusable logic with no framework or IO coupling.                              |
+| `src/types/`     | Types shared across modules. Types used in one module stay in that module.    |
+| `src/config/`    | Configuration loading and environment parsing.                                |
+| `tests/unit/`    | Vitest specs, mirroring `src/` paths; tooling specs in `tests/unit/scripts/`. |
+| `tests/e2e/`     | Playwright specs. Not installed by default.                                   |
+| `tests/support/` | Shared test helpers (`thrown()` / `thrownAsync()`).                           |
+| `bin/`           | Shell scripts (build helpers, AI PR-review loop).                             |
+| `tests/bin/`     | Bash tests for `bin/` scripts, run by `tests/bin/run.sh`.                     |
+| `scripts/`       | Repo-local Node/TS tooling.                                                   |
+| `docs/designs/`  | Design docs, named `YYYY-MM-DD-topic-design.md`.                              |
+| `docs/guides/`   | How-to documentation.                                                         |
+| `docs/toDo/`     | Active plans. Move to `docs/toDo/completed/` when finished.                   |
 
 ## TypeScript
 
@@ -48,8 +57,8 @@ This is a template base repo, this file needs to be updated to match specific pr
 ## Testing
 
 - Every behavior change ships with a test in the same commit.
-- Unit tests live in `tests/unit/` and mirror `src/` paths: `src/lib/parse.ts`
-  becomes `tests/unit/lib/parse.test.ts`.
+- Unit tests live in `tests/unit/` and mirror `src/` paths: `src/lib/<name>.ts`
+  becomes `tests/unit/lib/<name>.test.ts`.
 - End-to-end tests live in `tests/e2e/` and are Playwright. Vitest does not run
   them. Add Playwright per project; the template does not install it.
 - Test observable behavior through public interfaces. If a test needs access to
