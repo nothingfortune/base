@@ -6,8 +6,8 @@ name: e2e
 # Skips are job-level `if:` gates, never workflow-level path filters —
 # `e2e / e2e` is a required check on this repo, and a path-filtered workflow
 # creates no check run (PR blocked forever), while a skipped job reports
-# "skipped" and satisfies protection. See .github/scripts/doc-only.sh for
-# the scope logic and its fail-safe.
+# "skipped" and satisfies protection. The classifier is the shared scope.yml;
+# unknown runs e2e.
 
 on:
   push:
@@ -24,20 +24,9 @@ permissions:
   contents: read
 
 jobs:
+  # Shared classifier; unknown runs e2e, the same direction as ci.yml.
   scope:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      doc_only: ${{ steps.scope.outputs.doc_only }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-      - id: scope
-        env:
-          # Current base ref, not the creation-pinned base.sha — see ci.yml.
-          BASE_SHA: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
-        run: bash .github/scripts/doc-only.sh
+    uses: nothingfortune/workflows/.github/workflows/scope.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
 
   # Draft guard included: the sibling comment above always CLAIMED
   # draft-skipped, but the job had no guard (the same 0-of-1 wiring gap
@@ -46,4 +35,4 @@ jobs:
   e2e:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false) }}
-    uses: nothingfortune/workflows/.github/workflows/e2e.yml@102318a26f52e74480fc0006317dbc6bb4b14897 # v1.1.1
+    uses: nothingfortune/workflows/.github/workflows/e2e.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
