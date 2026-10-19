@@ -206,41 +206,52 @@ that does not exist, and while this guide was written it caught the guide citing
 sibling-repo paths as if they were this repo's. The CLAUDE.md example now
 uses a `<name>` placeholder.
 
-## Dead code (knip)
+## Code integrity
 
-**Enforces:** `npm run knip` fails on unused files, unused exports, unused
-dependencies and devDependencies, and unlisted dependencies. `knip.json`
-declares the entries: `src/index.ts` and every `scripts/*.mjs` (the
-`bin/*.sh` wrappers call them, which knip cannot follow). knip's own plugins
-pick up the vitest, ESLint and TypeScript configs and the test files.
+**Enforces:** `npm run integrity` runs the `@nothingfortune/workflows`
+integrity engine and fails on any finding. Rules: REF-001, REF-002 and REF-003
+(broken references, including `package.json` scripts that point at a missing
+file), DEAD-001 to DEAD-004 (unused files, unused exports, unused dependencies,
+and modules reachable only from tests), and CYC-001 (import cycles). The
+engine runs knip three times: default, `--production` and a cycles-only
+production pass. `knip.json` declares the entries: `src/index.ts` and every
+`scripts/*.mjs` (the `bin/*.sh` wrappers call them, which knip cannot follow);
+knip's own plugins pick up the vitest, ESLint and TypeScript configs and the
+test files.
 
-**Why:** dead code and stale dependencies cost review time, install time and
-attack surface, and nothing else in `check` notices them. A template is where
-this starts cheapest: every clone inherits a clean graph.
+**Why:** dead code, stale dependencies and dangling references cost review
+time, install time and attack surface, and nothing else in `check` notices
+them. A template is where this starts cheapest: every clone inherits a clean
+graph.
 
 **Updating:** when a new kind of entry point appears (a CLI, a worker, a
 second `scripts/` file type), add it to `entry`. Fix the import graph rather
 than ignoring a finding; an `ignore*` entry in `knip.json` needs a reason in
-the PR that adds it.
+the PR that adds it. There is no per-finding suppression yet: until phase I2,
+observe mode via `integrity.json` is the only outlet. Engine releases arrive as
+one Dependabot PR (the `nothingfortune-workflows` npm group).
 
-**Production pass:** `npm run knip` runs knip twice. The second run,
-`knip --production`, reads only the entries and files marked with `!` in
-`knip.json` (`src/`), so tests drop out of the graph. A module imported only
-by its own test passes the first run and fails the second. Write a module
-test-first if you like, but wire it into `src/` before the PR that adds it
-merges. In GitHub Actions both runs use knip's `github-actions` reporter, so
-each finding is also an inline annotation on the PR.
+**Production pass:** the second run, `knip --production`, reads only the
+entries and files marked with `!` in `knip.json` (`src/`), so tests drop out of
+the graph. A module imported only by its own test passes the first run and
+fails the second (DEAD-004). Write a module test-first if you like, but wire it
+into `src/` before the PR that adds it merges.
 
-**Proof:** a manual run with three planted defects (an unused export in a new
-`src/lib/` module, an orphan `src/` file, an unused `left-pad`
-devDependency): knip exited 1 listing all three under Unused exports, Unused
-files and Unused devDependencies. Reverted afterwards.
+**Output:** exit 0 is a pass, exit 1 means findings, and exit 2 means the
+analysis itself failed (a knip crash, bad config); exit 2 is never a pass. The
+engine writes `build/integrity/report.json` (git-ignored). In GitHub Actions it
+also writes a step summary table and emits an inline annotation per finding.
+
+**Proof:** a manual run planting four defects one at a time, each giving
+exactly one finding of the named rule and exit 1: a second, unused export in a
+new `src/lib/` module (DEAD-002), an orphan `src/` file (DEAD-001), a `src/`
+module imported only by a test (DEAD-004), and a `package.json` script
+`node scripts/gone.mjs` (REF-003). Reverted afterwards; `npm run check` then
+passed on the clean tree.
 
 **Origin:** jarvis-ur-ops-automation runs knip in its `validate` gate
 (`check:dead`); its 2026-09-23 code review (item 3.6) recorded the test-entry
-blind spot that the production pass now closes. Planted in base: a `src/`
-module imported only by a new test passed `knip` and failed
-`knip --production` naming the file.
+blind spot that the production pass now closes.
 
 ## Tracked dumps and archives
 

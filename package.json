@@ -18,14 +18,15 @@
     "coverage:drift": "node scripts/check-coverage-drift.mjs",
     "comment-density": "bash bin/comment-density.sh",
     "docs:check": "node scripts/check-docs.mjs",
-    "knip": "knip ${GITHUB_ACTIONS:+--reporter github-actions} && knip --production ${GITHUB_ACTIONS:+--reporter github-actions}",
-    "check": "npm run typecheck && npm run lint && npm run comment-density && npm run knip && npm run format:check && npm run test:coverage && npm run coverage:drift && npm run test:bin && npm run docs:check",
+    "integrity": "integrity check",
+    "check": "npm run typecheck && npm run lint && npm run comment-density && npm run integrity && npm run format:check && npm run test:coverage && npm run coverage:drift && npm run test:bin && npm run docs:check",
     "test:bin": "bash tests/bin/run.sh",
     "postinstall": "git config core.hooksPath >/dev/null 2>&1 || git config core.hooksPath .githooks || true",
     "test:mutation": "stryker run"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@nothingfortune/workflows": "github:nothingfortune/workflows#125089c3642893f0995161f7eaf16b45df8cf05b",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26.6.5",

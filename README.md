@@ -47,7 +47,7 @@ npm run check
 | `npm run lint`            | ESLint, zero warnings allowed                                  |
 | `npm run lint:fix`        | ESLint with autofix                                            |
 | `npm run comment-density` | Multi-line comment block ratchet                               |
-| `npm run knip`            | Dead code and unused dependencies                              |
+| `npm run integrity`       | Reference, dead-code and cycle checks (integrity engine)       |
 | `npm run format`          | Prettier, writing changes                                      |
 | `npm run format:check`    | Prettier, check only                                           |
 | `npm test`                | Vitest, single run                                             |
