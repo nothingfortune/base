@@ -5,7 +5,7 @@
 export _RUN_TEST_NESTED=1
 source "$(dirname "$0")/_harness.sh"
 RUNNER="$(cd "$(dirname "$0")" && pwd)/run.sh"
-TMP="$(mktemp -d)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 trap 'rm -rf "$TMP"' EXIT
 
 suite() { # <dir> <name> <body>
@@ -58,7 +58,8 @@ pkill -f 'sleep 13.7' 2>/dev/null
 assert_eq "0" "$left" "a TERMed runner leaves none of the suite's children running"
 
 # A suite shares the runner's process group: a background group is stopped by SIGTTIN on a tty read.
-suite "$TMP/pgrp" pgrp.test.sh "ps -o pgid= -p \$\$ -p \$PPID | tr -d ' ' | sort -u | wc -l | tr -d ' ' >'$TMP/pgids'"
+# perl's getpgrp, not ps: the macOS sandbox denies ps (no sysmond).
+suite "$TMP/pgrp" pgrp.test.sh "perl -e 'print getpgrp(\$_), qq(\\n) for @ARGV' \$\$ \$PPID | sort -u | wc -l | tr -d ' ' >'$TMP/pgids'"
 bash "$RUNNER" "$TMP/pgrp" >/dev/null 2>&1
 assert_eq "1" "$(cat "$TMP/pgids")" "a suite runs in the runner's process group, keeping terminal input"
 

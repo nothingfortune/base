@@ -4,7 +4,7 @@ source "$(dirname "$0")/_harness.sh"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SCRIPT="$ROOT/bin/comment-density.sh"
 
-TMP="$(mktemp -d)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 trap 'rm -rf "$TMP"' EXIT
 
 FIXTURE="$TMP/fixture"

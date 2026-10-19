@@ -68,7 +68,7 @@ ruleset="$(jq -n --arg name "$RULESET_NAME" --argjson checks "$checks_json" '{
       required_status_checks: $checks}}
   ]}')"
 
-errfile="$(mktemp)"; trap 'rm -f "$errfile"' EXIT
+errfile="$(mktemp "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1; trap 'rm -f "$errfile"' EXIT
 if ! existing="$(gh api "repos/$REPO/rulesets" 2>"$errfile")"; then
   # Unknown is not empty: creating here could duplicate a ruleset we failed to see.
   bad "ruleset: could not list rulesets ($(tr -d '\n' <"$errfile"))"

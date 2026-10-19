@@ -22,7 +22,7 @@ fixture='[
 ]'
 
 out="$(printf '%s' "$fixture" | unaddressed_bot_threads)"
-f="$(mktemp)"; printf '%s\n' "$out" > "$f"
+f="$(mktemp "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1; printf '%s\n' "$out" > "$f"
 
 assert_contains     "$f" $'101\t'                 "unaddressed Copilot thread (101) is listed"
 assert_contains     "$f" $'102\t'                 "bot-only-reply thread (102) is listed"
@@ -39,7 +39,7 @@ rm -f "$f"
 
 echo
 echo "pr_resolve_repo_and_number:"
-errfile="$(mktemp)"
+errfile="$(mktemp "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 
 # gh stub: repo view resolves; pr view resolves (used when the pr-arg is omitted).
 gh() {
@@ -93,7 +93,7 @@ reviews='[
 ]'
 
 out="$(printf '%s' "$reviews" | suppressed_findings)"
-f="$(mktemp)"; printf '%s\n' "$out" > "$f"
+f="$(mktemp "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1; printf '%s\n' "$out" > "$f"
 
 assert_contains     "$f" "web/app/thing.php:148"   "a suppressed finding is extracted with its location"
 assert_contains     "$f" "A real finding about"    "...and its text"

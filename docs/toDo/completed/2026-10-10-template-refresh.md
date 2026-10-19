@@ -1,5 +1,10 @@
 # Template refresh — harvest from dollyVision, outerReach, atlasAdmin, jarvis, fleetDemo
 
+> **CLOSED 2026-10-10.** All four PRs built on stacked branches
+> `chore/template-refresh-{1-hardening,2-gates,3-bootstraps,4-agents}`.
+> The Backlog section below is parked, not done — pull items into a fresh
+> todo when wanted.
+
 **Goal:** bring the generic lessons the sibling repos learned since the last
 port (2026-08-16) back into the template, as four sequential PRs.
 
@@ -49,7 +54,11 @@ the gates below each justify the dependency they add.
 - [x] Docs integrity test: relative links and backticked repo paths in living
       docs must resolve (dollyVision `check-doc-links` + outerReach
       `docs-paths`); also runs in CI's doc-only lane.
-- [x] knip dead-code gate.
+- [x] knip dead-code gate (TS/JS only; dead shell code in `bin/` is not
+      detected).
+- [x] Monolith limits: ESLint `max-lines` 400 / `max-lines-per-function` 150
+      on `src/` and `scripts/`, 600-line test files (dollyVision 2026-09-26
+      review; jarvis review row 4.8). Added after the plan closed, per user.
 - [x] Tracked-dump guard: `.gitignore` patterns + test failing on tracked
       `*.sql`, `*.dump`, `*.sqlite`, archives (outerReach repo-hygiene gate E).
 
@@ -71,13 +80,16 @@ the gates below each justify the dependency they add.
 
 ## PR 4 — agent and docs surface
 
-- [ ] `AGENTS.md` pointer to `CLAUDE.md` (a pointer cannot drift).
-- [ ] `.github/copilot-instructions.md`: review rubric only.
-- [ ] `.claude/settings.json`: deny agent edits to its own settings.
-- [ ] `CLAUDE.md`: new testing/process rules, one line each; incidents behind
+- [x] `AGENTS.md` pointer to `CLAUDE.md` (a pointer cannot drift).
+- [x] `.github/copilot-instructions.md`: review rubric only.
+- [x] `.claude/settings.json`: deny agent edits to its own settings — the
+      Edit tool by permission rule, shell writes by the sandbox's protected paths
+      (`allowUnsandboxedCommands: false` closes the unsandboxed retry).
+      Guarded by `tests/bin/claude-settings.test.sh`.
+- [x] `CLAUDE.md`: new testing/process rules, one line each; incidents behind
       them in `docs/guides/testing.md`. Comment rules pointer.
-- [ ] PR template: Why + test layer.
-- [ ] README: checklist uses `bin/init.sh` + `bin/setup-github.sh`.
+- [x] PR template: Why + test layer.
+- [x] README: checklist uses `bin/init.sh` + `bin/setup-github.sh`.
 
 ## Backlog (considered, not now)
 
@@ -89,8 +101,13 @@ the gates below each justify the dependency they add.
   setup-github's warning instead.
 - jscpd clone detection, shell coverage (`coverage-shell.sh`),
   `tsconfig.test.json`, entry-point convention, committed-config parse test.
-- `timeout-minutes` inside `nothingfortune/workflows` reusable jobs (other
-  repo).
+- In `nothingfortune/workflows` (other repo; needs its own PR, a v1 tag
+  move and pin bumps here):
+  - `timeout-minutes` inside the reusable jobs.
+  - Expose `lint.yml`'s actionlint + security-invariants auditor as a
+    reusable workflow so callers like base audit their own workflow files.
+  - `dependabot-automerge.yml` merges with `--merge`; base squash-merges
+    everything else, so switch it to `--squash`.
 - Decision / design-gaps / lessons-under-test / template-feedback log skeletons — empty logs in a
   template are noise; add per project.
 

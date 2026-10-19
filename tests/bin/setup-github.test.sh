@@ -4,7 +4,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$DIR/_harness.sh"
 
 SCRIPT="$DIR/../../bin/setup-github.sh"
-TMP="$(mktemp -d)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 trap 'rm -rf "$TMP"' EXIT
 STUB="$TMP/stub"; mkdir -p "$STUB"
 

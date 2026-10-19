@@ -1,17 +1,18 @@
 ## Summary
 
-<!-- What does this change and why? -->
+<!-- What changes, in a few bullets. -->
 
-## Changes
+## Why
 
--
+<!-- The problem this solves. -->
 
 ## Testing
 
-<!-- How was this verified? Paste relevant output. -->
+<!-- Test layer per behavior change: unit / e2e / none (and why). Paste the
+output that shows a new test or checker failing before the fix. -->
 
 ## Checklist
 
 - [ ] `npm run check` passes locally
-- [ ] Tests cover the behavior change
-- [ ] Docs updated if behavior or setup changed
+- [ ] Every behavior change has a test, seen failing first
+- [ ] Docs this change makes false are updated

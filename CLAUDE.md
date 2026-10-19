@@ -67,13 +67,61 @@ What each gate enforces, and how to move its ratchet, is in
   something private, the boundary is wrong — fix the boundary, do not export the
   internal.
 - Every bug fix starts with a failing test that reproduces the bug. Watch it
-  fail, then fix it.
+  fail for the right reason, then fix it: a test green before the fix is not
+  testing the bug.
 - Never make a suite green by deleting a test, adding `.skip`, or loosening an
   assertion. If a test is genuinely wrong, say so and explain why before
   changing it.
 - Mock only what crosses the network, filesystem, or clock. Prefer real objects.
 - A test asserts one expected result. No conditionals or `try`/`catch` that let
   it pass either way.
+- Assert what separates the branches, not what they share. If deleting the
+  branch you just wrote leaves the suite green, the test is decorative.
+- Drive the precondition; do not assume it. Assert the state a step depends on
+  exists before asserting what the step does with it.
+- A test may not depend on another defect. When a fix breaks an unrelated test,
+  give that test a real trigger; never restore the old behavior.
+- A green exit code is not evidence. Read the diff after any scripted edit, and
+  plant the defect a new checker hunts to watch it fire.
+- A suppression marker is a claim. Its reason must be specific enough to be
+  falsifiable.
+- A spec sentence that states a behavior gets its test in the same change.
+  Ordering claims are tested with out-of-order input.
+- A failure reported as a return value, not an exception, gets a test that
+  makes it fail.
+- A displayed count is tested by counting the records behind it, never against
+  another number the same code produced.
+- Assert absence against the data source, never against the first render.
+- Run the whole suite before claiming done, not just the file you touched.
+
+Why each rule exists: `docs/guides/testing.md`.
+
+## Comments
+
+The nine rules ([Spertus](https://stackoverflow.blog/2021/12/23/best-practices-for-writing-code-comments/)):
+comments do not duplicate the code; do not excuse unclear code; if a clear one
+cannot be written, fix the code; dispel confusion; explain unidiomatic code;
+link the source of copied code; link external references where they help;
+accompany bug fixes; mark incomplete implementations.
+
+- A justified comment is ONE line stating WHY. Extended rationale goes in
+  `docs/`, never source.
+- The markers `@public-api`, `// strtotime-ok:`, `@covered-by`, and
+  `// env-gate-ok:` are required where they apply and exempt from the above.
+- `npm run comment-density` holds the count of multi-line comment blocks in
+  `src/` to its baseline; a new block fails `check`.
+
+## Working rules
+
+- A plan prescribes intent, evidence, and acceptance criteria — not code it has
+  not executed.
+- A commit message is a claim. If it says "verified by X", X was run.
+- Before trusting a probe you wrote, run it where you already know the answer,
+  in both directions.
+- When a review flags one instance, sweep its whole class in the same round.
+  Prefer making the class inexpressible over catching it.
+- Two review rounds on one line means the operation is wrong, not the value.
+- Docs name the command, not the count it prints; counts go stale.
 
 ## CI
 
@@ -98,9 +146,11 @@ What each gate enforces, and how to move its ratchet, is in
   - `mutation.yml` — manual Stryker run (`npm run test:mutation`).
     Informational: never on PRs, never required; fails only when Stryker
     kills nothing, which means the runner broke.
-- Dependabot (npm + actions, weekly): minors/patches ride CI; a major that
-  fails the gate gets CLOSED with a comment and taken deliberately in a
-  dedicated branch — never merged red, never left rotting open.
+- Dependabot (npm + actions, one Monday batch): minors/patches arrive grouped
+  and ride CI; each major arrives alone. A major that fails the gate gets
+  CLOSED with a comment and taken deliberately in a dedicated branch — never
+  merged red, never left rotting open. Vitest and coverage-v8 majors are
+  ignored until Stryker supports them (`docs/guides/quality-gates.md`).
 - `.nvmrc` is the single source of truth for the Node version, read via
   `node-version-file`. Never hardcode a version in the workflow.
 - Install with `npm ci`, never `npm install`, in CI. `package-lock.json` is
@@ -135,6 +185,18 @@ AI reviewers (Codex + GitHub Copilot) review PRs. The loop, in order:
 
 All four fail closed: a failed API fetch is never reported as "nothing to
 address".
+
+Pull requests:
+
+- One concern per PR. A behavior change, its test, and the docs it makes false
+  ship together; nothing else rides along. A change that will not converge in
+  review is too big: split it.
+- Stage files by path, never `git add -A` or `git add .`.
+- Answer every finding on the PR: fixed (with the commit), tracked (where), or
+  won't fix (why). Push a round's fixes as one commit from a clean tree.
+- Codex reads `AGENTS.md`, which points here and at the review rubric;
+  Copilot reads `.github/copilot-instructions.md` (the rubric). Rules every
+  reviewer must enforce go in this file or the rubric.
 
 ## Adjusting for project type
 
