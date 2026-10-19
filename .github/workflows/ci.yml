@@ -5,8 +5,8 @@ name: CI
 # repo's branch protection requires `check / check`, and a path-filtered
 # workflow creates no check run at all, leaving the required check "Expected"
 # forever and the PR unmergeable. A job skipped via `if:` reports "skipped",
-# which branch protection treats as satisfied. Scope logic (and its
-# fail-safe direction) lives in .github/scripts/doc-only.sh.
+# which branch protection treats as satisfied. The classifier is the shared
+# scope.yml; this file picks the fail direction (unknown → full gate).
 
 on:
   push:
@@ -22,26 +22,9 @@ permissions:
   contents: read
 
 jobs:
+  # Shared classifier: doc_only is true, false or unknown; unknown runs the full gate below.
   scope:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      doc_only: ${{ steps.scope.outputs.doc_only }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0 # scope detection diffs against the base commit
-      - id: scope
-        env:
-          # Read via env, never interpolated into the shell. PR: the CURRENT
-          # base-branch ref — NOT event.pull_request.base.sha, which is pinned
-          # at PR creation; against the merge-ref checkout a stale base makes
-          # the diff include every base-branch commit landed since the PR
-          # opened, misclassifying doc-only PRs as mixed once main advances.
-          # Push: the previous head (zero SHA on first push — the script
-          # fail-safes to the full gate).
-          BASE_SHA: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
-        run: bash .github/scripts/doc-only.sh
+    uses: nothingfortune/workflows/.github/workflows/scope.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
 
   # `!cancelled()` is load-bearing: it replaces the implicit success(needs)
   # so a FAILING scope job cannot skip the gate. Without it, scope failing
@@ -52,7 +35,7 @@ jobs:
   check:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' }}
-    uses: nothingfortune/workflows/.github/workflows/ci.yml@102318a26f52e74480fc0006317dbc6bb4b14897 # v1.1.1
+    uses: nothingfortune/workflows/.github/workflows/ci.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
 
   # The doc lane: what a prose change can actually break. Runs only when
   # check skips, so exactly one lane runs per change.

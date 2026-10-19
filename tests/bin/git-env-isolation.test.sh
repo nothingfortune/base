@@ -19,7 +19,7 @@ before="$(state)"
 
 # What git exports to a hook run from a linked worktree: absolute paths.
 GIT_DIR="$SENTINEL/.git" GIT_WORK_TREE="$SENTINEL" GIT_INDEX_FILE="$SENTINEL/.git/index" \
-  bash "$DIR/doc-only.test.sh" >"$TMP/out" 2>&1
+  bash "$DIR/tracked-dumps.test.sh" >"$TMP/out" 2>&1
 rc=$?
 
 assert_eq "0" "$rc" "a repo-building test still passes under an exported GIT_DIR"
