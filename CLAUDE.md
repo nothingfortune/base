@@ -10,21 +10,21 @@ This is a template base repo, this file needs to be updated to match specific pr
 
 `npm run check` is the gate. It must pass before you claim work is done.
 
-| Command                                   | Purpose                                                                                              |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `npm run check`                           | typecheck + lint + comment density + knip + format check + coverage + drift + bin tests + docs check |
-| `npm run typecheck`                       | `tsc --noEmit`                                                                                       |
-| `npm run lint` / `npm run lint:fix`       | ESLint, `--max-warnings 0`                                                                           |
-| `npm run comment-density`                 | Multi-line comment blocks must equal `comment-density-baseline.json`                                 |
-| `npm run knip`                            | Unused files, exports and dependencies                                                               |
-| `npm run format` / `npm run format:check` | Prettier                                                                                             |
-| `npm test` / `npm run test:watch`         | Vitest (the fast loop; no coverage)                                                                  |
-| `npm run test:coverage`                   | Vitest with v8 coverage against the floors in `vitest.config.ts`                                     |
-| `npm run coverage:drift`                  | Fails when a floor sits more than 2 points under measured coverage                                   |
-| `npm run test:bin`                        | Bash tests for `bin/` scripts and repo guards                                                        |
-| `npm run docs:check`                      | Relative links and living-doc repo paths resolve                                                     |
-| `npm run test:mutation`                   | Stryker mutation run; informational, never part of `check`                                           |
-| `bin/setup-github.sh [--dry-run]`         | Apply the default-branch ruleset and repo settings; safe to re-run                                   |
+| Command                                   | Purpose                                                                                                   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `npm run check`                           | typecheck + lint + comment density + integrity + format check + coverage + drift + bin tests + docs check |
+| `npm run typecheck`                       | `tsc --noEmit`                                                                                            |
+| `npm run lint` / `npm run lint:fix`       | ESLint, `--max-warnings 0`                                                                                |
+| `npm run comment-density`                 | Multi-line comment blocks must equal `comment-density-baseline.json`                                      |
+| `npm run integrity`                       | Integrity engine: broken references, dead code, import cycles (`build/integrity/report.json`)             |
+| `npm run format` / `npm run format:check` | Prettier                                                                                                  |
+| `npm test` / `npm run test:watch`         | Vitest (the fast loop; no coverage)                                                                       |
+| `npm run test:coverage`                   | Vitest with v8 coverage against the floors in `vitest.config.ts`                                          |
+| `npm run coverage:drift`                  | Fails when a floor sits more than 2 points under measured coverage                                        |
+| `npm run test:bin`                        | Bash tests for `bin/` scripts and repo guards                                                             |
+| `npm run docs:check`                      | Relative links and living-doc repo paths resolve                                                          |
+| `npm run test:mutation`                   | Stryker mutation run; informational, never part of `check`                                                |
+| `bin/setup-github.sh [--dry-run]`         | Apply the default-branch ruleset and repo settings; safe to re-run                                        |
 
 What each gate enforces, and how to move its ratchet, is in
 `docs/guides/quality-gates.md`.

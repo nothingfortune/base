@@ -15,6 +15,9 @@ updates:
       timezone: Etc/UTC
     open-pull-requests-limit: 5
     groups:
+      # An engine release arrives as one PR, apart from the weekly batch.
+      nothingfortune-workflows:
+        patterns: ['@nothingfortune/workflows']
       npm-minor-and-patch:
         update-types: [minor, patch]
     commit-message:
