@@ -223,10 +223,13 @@ second `scripts/` file type), add it to `entry`. Fix the import graph rather
 than ignoring a finding; an `ignore*` entry in `knip.json` needs a reason in
 the PR that adds it.
 
-**Blind spot:** test files are entries, so a module imported only by its own
-test looks used. `knip --production` drops tests from the graph and would
-catch it, at the cost of flagging modules written test-first before they are
-wired in. Run it by hand when auditing.
+**Production pass:** `npm run knip` runs knip twice. The second run,
+`knip --production`, reads only the entries and files marked with `!` in
+`knip.json` (`src/`), so tests drop out of the graph. A module imported only
+by its own test passes the first run and fails the second. Write a module
+test-first if you like, but wire it into `src/` before the PR that adds it
+merges. In GitHub Actions both runs use knip's `github-actions` reporter, so
+each finding is also an inline annotation on the PR.
 
 **Proof:** a manual run with three planted defects (an unused export in a new
 `src/lib/` module, an orphan `src/` file, an unused `left-pad`
@@ -235,7 +238,9 @@ files and Unused devDependencies. Reverted afterwards.
 
 **Origin:** jarvis-ur-ops-automation runs knip in its `validate` gate
 (`check:dead`); its 2026-09-23 code review (item 3.6) recorded the test-entry
-blind spot above.
+blind spot that the production pass now closes. Planted in base: a `src/`
+module imported only by a new test passed `knip` and failed
+`knip --production` naming the file.
 
 ## Tracked dumps and archives
 
