@@ -1,7 +1,10 @@
 {
   "sandbox": {
     "enabled": true,
-    "allowUnsandboxedCommands": false
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "enableWeakerNetworkIsolation": true
+    }
   },
   "permissions": {
     "deny": ["Edit(.claude/settings.json)"]

@@ -6,6 +6,8 @@ q() { node -e 'const s=require(process.argv[1]); console.log(JSON.stringify(eval
 
 assert_eq 'true' "$(q '.sandbox?.enabled')" "sandbox on: the OS blocks shell writes to .claude/settings.json"
 assert_eq 'false' "$(q '.sandbox?.allowUnsandboxedCommands')" "no unsandboxed retry escape hatch"
+# Go CLIs (gh, which the review loop runs) verify TLS through macOS trustd; without it every gh call fails.
+assert_eq 'true' "$(q '.sandbox?.network?.enableWeakerNetworkIsolation')" "gh can verify TLS inside the sandbox"
 assert_eq 'true' "$(q '.permissions?.deny?.includes("Edit(.claude/settings.json)")')" "Edit tool denied on its own settings"
 # Claude Code never consults Write(path) rules; Edit(...) already covers the Write tool.
 assert_eq 'false' "$(q '.permissions?.deny?.some(r => r.startsWith("Write("))')" "no dead Write(...) rules"
