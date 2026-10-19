@@ -3,7 +3,7 @@
 source "$(dirname "$0")/_harness.sh"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-TMP="$(mktemp -d)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 trap 'rm -rf "$TMP"' EXIT
 
 SENTINEL="$TMP/sentinel"

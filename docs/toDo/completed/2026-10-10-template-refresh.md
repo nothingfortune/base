@@ -82,7 +82,10 @@ the gates below each justify the dependency they add.
 
 - [x] `AGENTS.md` pointer to `CLAUDE.md` (a pointer cannot drift).
 - [x] `.github/copilot-instructions.md`: review rubric only.
-- [x] `.claude/settings.json`: deny agent edits to its own settings.
+- [x] `.claude/settings.json`: deny agent edits to its own settings — the
+      Edit tool by permission rule, shell writes by the sandbox's protected paths
+      (`allowUnsandboxedCommands: false` closes the unsandboxed retry).
+      Guarded by `tests/bin/claude-settings.test.sh`.
 - [x] `CLAUDE.md`: new testing/process rules, one line each; incidents behind
       them in `docs/guides/testing.md`. Comment rules pointer.
 - [x] PR template: Why + test layer.

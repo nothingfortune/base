@@ -194,9 +194,9 @@ Pull requests:
 - Stage files by path, never `git add -A` or `git add .`.
 - Answer every finding on the PR: fixed (with the commit), tracked (where), or
   won't fix (why). Push a round's fixes as one commit from a clean tree.
-- Codex and Copilot read `AGENTS.md` (a pointer here) and
-  `.github/copilot-instructions.md` (the review rubric). Rules they must
-  enforce go in this file.
+- Codex reads `AGENTS.md`, which points here and at the review rubric;
+  Copilot reads `.github/copilot-instructions.md` (the rubric). Rules every
+  reviewer must enforce go in this file or the rubric.
 
 ## Adjusting for project type
 

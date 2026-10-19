@@ -23,7 +23,7 @@ dumps() { # <repo> [allowed-path...] — prints tracked dump/archive paths, sort
   done | LC_ALL=C sort
 }
 
-TMP="$(mktemp -d)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 trap 'rm -rf "$TMP"' EXIT
 
 # This repo: nothing tracked.

@@ -9,7 +9,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$DIR/_harness.sh"
 
 SCRIPT="$DIR/../../bin/pr-reviews-done.sh"
-STUB_DIR="$(mktemp -d)"
+STUB_DIR="$(mktemp -d "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 
 # $1 = how the reviews endpoint behaves: "fail" | a JSON payload
 # $2 = (optional) JSON for the inline review-comments endpoint — default none

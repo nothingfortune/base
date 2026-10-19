@@ -10,7 +10,7 @@ HOOK="$REPO_ROOT/.githooks/pre-push"
 ZERO="0000000000000000000000000000000000000000"
 
 # Sandbox: a real git repo with one commit, and a stub npm that logs.
-TMP="$(mktemp -d)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/t.XXXXXX")" || exit 1
 trap 'rm -rf "$TMP"' EXIT
 (
   cd "$TMP"
