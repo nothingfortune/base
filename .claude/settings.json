@@ -1,5 +1,26 @@
 {
   "permissions": {
-    "deny": ["Edit(.claude/settings.json)"]
+    "deny": [
+      "Edit(.claude/settings.json)",
+      "Edit(.claude/settings.local.json)",
+      "Edit(.claude/hooks/**)",
+      "Read(**/.env*)",
+      "Read(!**/.env*.example*)",
+      "Edit(**/.env*)",
+      "Edit(!**/.env*.example*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-bash.mjs\""
+          }
+        ]
+      }
+    ]
   }
 }

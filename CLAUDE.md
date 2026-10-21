@@ -122,6 +122,9 @@ accompany bug fixes; mark incomplete implementations.
   Prefer making the class inexpressible over catching it.
 - Two review rounds on one line means the operation is wrong, not the value.
 - Docs name the command, not the count it prints; counts go stale.
+- Agents may not read or edit `.env*` files (only `*.example` ones) or change
+  `.claude/` settings and hooks: deny rules in `.claude/settings.json`, plus
+  `.claude/hooks/guard-bash.mjs` for shell commands. Ask the user instead.
 
 ## CI
 
