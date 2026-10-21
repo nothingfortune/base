@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseTokens } from '../../../src/lib/design-tokens';
+import type { Token } from '../../../src/lib/design-tokens';
+import { parseTokens, validateTokens } from '../../../src/lib/design-tokens';
 
 const BLUE = { colorSpace: 'srgb', components: [0, 0.4, 1], hex: '#0066ff' };
 
@@ -164,6 +165,81 @@ describe('parseTokens', () => {
   ])('rejects a %s of %j', (type, value) => {
     expect(errorsOf({ t: { $type: type, x: { $value: value } } })).toEqual([
       expect.stringMatching(/^t\.x: /),
+    ]);
+  });
+});
+
+const RED = { colorSpace: 'srgb', components: [1, 0, 0] } as const;
+
+function color(path: string, value: Token['value'] = { ...RED, components: [1, 0, 0] }): Token {
+  return { path, type: 'color', value };
+}
+
+function alias(path: string, target: string, type: Token['type'] = 'color'): Token {
+  return { path, type, value: { alias: target } };
+}
+
+describe('validateTokens', () => {
+  it('accepts a transitive alias chain', () => {
+    expect(validateTokens([alias('a', 'b'), alias('b', 'c'), color('c')], [])).toEqual([]);
+  });
+
+  it('reports a missing alias target', () => {
+    expect(validateTokens([alias('color.fg', 'color.nope')], [])).toEqual([
+      expect.stringMatching(/^color\.fg: alias \{color\.nope\} has no target/),
+    ]);
+  });
+
+  it('reports a self-alias as a cycle', () => {
+    expect(validateTokens([alias('a', 'a')], [])).toEqual([expect.stringMatching(/cycle: a → a/)]);
+  });
+
+  it('reports a longer cycle with its path', () => {
+    expect(validateTokens([alias('a', 'b'), alias('b', 'a')], [])).toEqual([
+      expect.stringMatching(/^a: .*cycle: a → b → a/),
+      expect.stringMatching(/^b: .*cycle: b → a → b/),
+    ]);
+  });
+
+  it('reports a type mismatch', () => {
+    expect(
+      validateTokens([color('color.a'), alias('space.x', 'color.a', 'dimension')], []),
+    ).toEqual([
+      expect.stringMatching(/^space\.x: alias \{color\.a\} is color, expected dimension/),
+    ]);
+  });
+
+  it('reports a dark override for a missing path', () => {
+    expect(validateTokens([color('color.bg.surface')], [color('color.bg.surfce')])).toEqual([
+      'dark: color.bg.surfce: no such token in tokens.json',
+    ]);
+  });
+
+  it('reports a dark override that changes the type', () => {
+    const dark: Token = { path: 'color.a', type: 'number', value: 1 };
+    expect(validateTokens([color('color.a')], [dark])).toEqual([
+      'dark: color.a: is number, but tokens.json has color',
+    ]);
+  });
+
+  it('checks dark aliases against tokens.json', () => {
+    expect(validateTokens([color('color.a')], [alias('color.a', 'color.gone')])).toEqual([
+      expect.stringMatching(/^dark: color\.a: alias \{color\.gone\} has no target/),
+    ]);
+  });
+
+  it('accepts a dark alias into tokens.json', () => {
+    expect(
+      validateTokens([color('color.a'), color('color.b')], [alias('color.a', 'color.b')]),
+    ).toEqual([]);
+  });
+});
+
+describe('validateTokens in dark mode', () => {
+  it('reports a cycle that only the dark overrides create', () => {
+    expect(validateTokens([alias('a', 'b'), color('b')], [alias('b', 'a')])).toEqual([
+      'dark: a: alias cycle: a → b → a',
+      'dark: b: alias cycle: b → a → b',
     ]);
   });
 });

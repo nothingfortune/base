@@ -240,3 +240,54 @@ export function parseTokens(
   walk(doc, [], undefined, w);
   return { tokens: w.tokens, errors: w.errors };
 }
+
+function isAlias(value: Token['value']): value is { alias: string } {
+  return typeof value === 'object' && 'alias' in value;
+}
+
+function resolveError(token: Token, byPath: ReadonlyMap<string, Token>): string | undefined {
+  if (!isAlias(token.value)) return undefined;
+  const first = token.value.alias;
+  const seen = [token.path];
+  let current: Token = token;
+  while (isAlias(current.value)) {
+    const target = byPath.get(current.value.alias);
+    if (target === undefined) return `${token.path}: alias {${current.value.alias}} has no target`;
+    if (seen.includes(target.path)) {
+      return `${token.path}: alias cycle: ${[...seen, target.path].join(' → ')}`;
+    }
+    seen.push(target.path);
+    current = target;
+  }
+  return current.type === token.type
+    ? undefined
+    : `${token.path}: alias {${first}} is ${current.type}, expected ${token.type}`;
+}
+
+/** Validate aliases and dark overrides; an empty list means valid. */
+export function validateTokens(base: readonly Token[], dark: readonly Token[]): string[] {
+  const light = new Map(base.map((t) => [t.path, t]));
+  const errors: string[] = [];
+  const failed = new Set<string>();
+  for (const token of base) {
+    const error = resolveError(token, light);
+    if (error !== undefined) {
+      errors.push(error);
+      failed.add(token.path);
+    }
+  }
+  const merged = new Map(light);
+  for (const token of dark) {
+    const original = light.get(token.path);
+    if (original === undefined) errors.push(`dark: ${token.path}: no such token in tokens.json`);
+    else if (original.type !== token.type) {
+      errors.push(`dark: ${token.path}: is ${token.type}, but tokens.json has ${original.type}`);
+    } else merged.set(token.path, token);
+  }
+  for (const token of merged.values()) {
+    if (failed.has(token.path)) continue;
+    const error = resolveError(token, merged);
+    if (error !== undefined) errors.push(`dark: ${error}`);
+  }
+  return errors;
+}
