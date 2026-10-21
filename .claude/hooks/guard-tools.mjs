@@ -8,7 +8,8 @@ const SHELLS = new Set(['Bash', 'PowerShell']);
 const ENV_NAME = /(?<![\w$-])\.env[\w.-]*/g;
 const WORD_BREAK = /[\s;&|()<>=]+/;
 const AGENT_CONFIG = /(?<![\w.-])\.claude(?![\w-])/;
-const CHAINED = /[;&|<>`]|\$\(/;
+// Newlines separate commands; PowerShell runs (…), {…} and @(…) as subexpressions.
+const CHAINED = /[;&|<>`\n\r(){}@]|\$\(/;
 const READ_ONLY = new Set(['cat', 'head', 'tail', 'ls', 'wc', 'stat', 'file', 'diff', 'grep']);
 const GIT_READ_ONLY = new Set(['add', 'diff', 'log', 'show', 'status', 'ls-files', 'blame']);
 
@@ -23,10 +24,24 @@ function blockEnv(names) {
   );
 }
 
-// A dotfile name, or a glob that could expand to one, other than an *.example file.
+// Whether the glob character after a leading dot could match an e: jq filters like .[] and .[0] cannot.
+function globCouldStartWithE(n) {
+  const c = n[1];
+  if (c === 'e' || c === '*' || c === '?') return true;
+  if (c !== '[') return false;
+  const close = n.indexOf(']', 2);
+  const cls = close === -1 ? '' : n.slice(2, close);
+  if (cls.startsWith('!') || cls.startsWith('^') || cls.includes('e')) return true;
+  return [...cls.matchAll(/(.)-(.)/g)].some(([, lo, hi]) => lo <= 'e' && 'e' <= hi);
+}
+
+// A dotfile name, or a glob or brace expansion that could become one, other than an *.example file.
 function envLike(name) {
-  if (!name.startsWith('.') || name.includes('.example')) return false;
-  return name.startsWith('.env') || /[*?[]/.test(name);
+  const n = name.toLowerCase();
+  if (n.includes('.example')) return false;
+  if (/\{[^}]*(?:,|\.\.)[^}]*\}/.test(n)) return n.includes('.') && n.includes('e');
+  if (!n.startsWith('.')) return false;
+  return n.startsWith('.env') || (/[*?[]/.test(n) && globCouldStartWithE(n));
 }
 
 // Options are refused outright: allowlisting flags loses to abbreviations like --out for --output.
@@ -41,7 +56,9 @@ function readOnly(command) {
 
 function checkShell(raw) {
   // Quotes, backslashes and redundant path segments go, so '.claude'/x, .\env and .claude//x read plainly.
+  // Lowercased too: macOS paths ignore case, so .ENV and .Claude reach the same files.
   const command = raw
+    .toLowerCase()
     .replace(/["'\\]/g, '')
     .replace(/\/(?:\.\/)+/g, '/')
     .replace(/\/{2,}/g, '/');

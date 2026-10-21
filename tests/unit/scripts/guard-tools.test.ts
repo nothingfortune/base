@@ -130,6 +130,52 @@ describe('file tools and .env files outside the permission rules', () => {
   });
 });
 
+describe('evasions from the third security review', () => {
+  it.each([
+    'cat .claude/settings.json\nrm .claude/settings.json',
+    'cat .claude/settings.json\r\nrm .claude/settings.json',
+    'ls (Remove-Item .claude/settings.json)',
+    'ls @(Remove-Item .claude/hooks)',
+    'cat {.claude/hooks}',
+    'echo {} > .Claude/Settings.json',
+  ])('blocks %j', (command) => {
+    expect(bash(command, CONFIG_BLOCK)).toEqual({ status: 2, said: true });
+  });
+
+  it.each(['cat .ENV', 'cat .Env.Local', 'cat .{e,x}nv', 'cat {.,x}env', 'cat .e{n,x}v'])(
+    'blocks the .env evasion %j',
+    (command) => {
+      expect(bash(command, ENV_BLOCK)).toEqual({ status: 2, said: true });
+    },
+  );
+
+  it('blocks a file path whose name differs only in case', () => {
+    expect(
+      hook({ tool_name: 'Read', tool_input: { file_path: '/elsewhere/.ENV' } }, ENV_BLOCK),
+    ).toEqual({
+      status: 2,
+      said: true,
+    });
+  });
+
+  it('blocks a bracket range that covers e', () => {
+    expect(bash('cat .[a-z]nv', ENV_BLOCK)).toEqual({ status: 2, said: true });
+  });
+
+  it.each([
+    "gh api x --jq '.[] | .commit_id[0:7]'",
+    "jq '.[].number' f.json",
+    "jq '{state: .state, sha: .head.sha}' f.json",
+    "sed -n 's/^v = .[0-9]*$/x/p' f",
+  ])('allows the jq or regex filter %j', (command) => {
+    expect(bash(command)).toEqual(ALLOWED);
+  });
+
+  it('still allows an .EXAMPLE file in any case', () => {
+    expect(bash('cat .ENV.EXAMPLE')).toEqual(ALLOWED);
+  });
+});
+
 describe('input handling', () => {
   it('allows a tool it does not guard', () => {
     expect(
