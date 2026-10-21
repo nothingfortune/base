@@ -176,6 +176,46 @@ describe('evasions from the third security review', () => {
   });
 });
 
+describe('evasions from the commit security review', () => {
+  it.each([
+    'cat .[[:alpha:]]nv',
+    'cat .[]e]nv',
+    'cat .{d..f}nv',
+    'cat .{env,x.example}',
+    'cat {.env,a.example}',
+  ])('blocks %j', (command) => {
+    expect(bash(command, ENV_BLOCK)).toEqual({ status: 2, said: true });
+  });
+
+  it.each(['for i in {1..5}; do echo $i; done', "jq '.[0-9]' f.json"])('allows %j', (command) => {
+    expect(bash(command)).toEqual(ALLOWED);
+  });
+});
+
+describe('Windows paths in PowerShell commands', () => {
+  function ps(command: string, expected?: RegExp): { status: number | null; said: boolean } {
+    return hook({ tool_name: 'PowerShell', tool_input: { command } }, expected);
+  }
+
+  it.each(['Get-Content C:\\project\\.env', 'Get-Content ..\\.env.local'])(
+    'blocks the .env path %j',
+    (command) => {
+      expect(ps(command, ENV_BLOCK)).toEqual({ status: 2, said: true });
+    },
+  );
+
+  it.each([
+    'Set-Content C:\\project\\.claude\\settings.json "{}"',
+    'Remove-Item .claude\\hooks\\guard-tools.mjs',
+  ])('blocks the .claude path %j', (command) => {
+    expect(ps(command, CONFIG_BLOCK)).toEqual({ status: 2, said: true });
+  });
+
+  it('allows a Windows path to an .example file', () => {
+    expect(ps('Get-Content C:\\project\\.env.example')).toEqual(ALLOWED);
+  });
+});
+
 describe('input handling', () => {
   it('allows a tool it does not guard', () => {
     expect(

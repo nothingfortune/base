@@ -24,22 +24,34 @@ function blockEnv(names) {
   );
 }
 
-// Whether the glob character after a leading dot could match an e: jq filters like .[] and .[0] cannot.
+// Whether the glob after a leading dot could match an e; only digit classes such as jq's .[0:7] are exempt.
 function globCouldStartWithE(n) {
   const c = n[1];
   if (c === 'e' || c === '*' || c === '?') return true;
   if (c !== '[') return false;
+  // A ] right after [ is a class member, so .[]e]nv is a class; a lone .[] is literal.
+  if (n[2] === ']') return n.indexOf(']', 3) !== -1;
   const close = n.indexOf(']', 2);
-  const cls = close === -1 ? '' : n.slice(2, close);
-  if (cls.startsWith('!') || cls.startsWith('^') || cls.includes('e')) return true;
-  return [...cls.matchAll(/(.)-(.)/g)].some(([, lo, hi]) => lo <= 'e' && 'e' <= hi);
+  return close !== -1 && !/^[0-9:-]*$/.test(n.slice(2, close));
 }
 
-// A dotfile name, or a glob or brace expansion that could become one, other than an *.example file.
+// Letter ranges like {d..f} spelled out, so the brace check sees every letter they produce.
+function expandRanges(n) {
+  return n.replace(/\{(.)\.\.(.)\}/g, (_, lo, hi) => {
+    let out = '';
+    for (let c = lo.charCodeAt(0); c <= hi.charCodeAt(0); c++) out += String.fromCharCode(c);
+    return out;
+  });
+}
+
+// A dotfile name, or a glob or brace expansion that could become one, other than a plain *.example name.
 function envLike(name) {
   const n = name.toLowerCase();
-  if (n.includes('.example')) return false;
-  if (/\{[^}]*(?:,|\.\.)[^}]*\}/.test(n)) return n.includes('.') && n.includes('e');
+  if (!/[{}*?[\]]/.test(n) && n.includes('.example')) return false;
+  if (/\{[^}]*(?:,|\.\.)[^}]*\}/.test(n)) {
+    const spelled = expandRanges(n);
+    return spelled.replace(/\.\./g, '').includes('.') && spelled.includes('e');
+  }
   if (!n.startsWith('.')) return false;
   return n.startsWith('.env') || (/[*?[]/.test(n) && globCouldStartWithE(n));
 }
@@ -54,14 +66,23 @@ function readOnly(command) {
   return args !== null && args.every((a) => a === '--' || !a.startsWith('-'));
 }
 
-function checkShell(raw) {
-  // Quotes, backslashes and redundant path segments go, so '.claude'/x, .\env and .claude//x read plainly.
-  // Lowercased too: macOS paths ignore case, so .ENV and .Claude reach the same files.
-  const command = raw
+// Quotes and redundant path segments go, so '.claude'/x and .claude//x read plainly; lowercased because macOS paths ignore case.
+function normalize(raw, backslash) {
+  return raw
     .toLowerCase()
-    .replace(/["'\\]/g, '')
+    .replace(/["']/g, '')
+    .replace(/\\/g, backslash)
     .replace(/\/(?:\.\/)+/g, '/')
     .replace(/\/{2,}/g, '/');
+}
+
+// A backslash is a shell escape (.\env) or a Windows separator (C:\x\.env), so both readings are checked.
+function checkShell(raw) {
+  checkCommand(normalize(raw, ''));
+  checkCommand(normalize(raw, '/'));
+}
+
+function checkCommand(command) {
   const named = [...command.matchAll(ENV_NAME)].map((m) => m[0]);
   const globbed = command.split(WORD_BREAK).map((w) => w.slice(w.lastIndexOf('/') + 1));
   const env = [...named, ...globbed].filter(envLike);
