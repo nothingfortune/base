@@ -128,12 +128,24 @@ function checkMeasure(raw: unknown, units: readonly string[]): Check {
   return ok({ value: raw.value, unit: raw.unit });
 }
 
-function checkFamily(raw: unknown): Check {
-  if (typeof raw === 'string' && raw !== '') return ok(raw);
-  if (Array.isArray(raw) && raw.length > 0 && raw.every((f) => typeof f === 'string')) {
-    return ok(raw);
+// A raw newline would end the CSS string and let the rest parse as rules.
+function hasControl(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code < 32 || code === 127) return true;
   }
-  return fail('fontFamily must be a non-empty string or list of strings');
+  return false;
+}
+
+function checkFamily(raw: unknown): Check {
+  const names: unknown[] = Array.isArray(raw) ? raw : [raw];
+  if (names.length === 0 || !names.every((f) => typeof f === 'string' && f !== '')) {
+    return fail('fontFamily must be a non-empty string or list of strings');
+  }
+  if (names.some((f) => hasControl(String(f)))) {
+    return fail('fontFamily must not contain control characters');
+  }
+  return ok(raw as TokenValue);
 }
 
 function checkWeight(raw: unknown): Check {
@@ -164,7 +176,7 @@ function checkValue(type: TokenType, raw: unknown): Check {
 interface Walk {
   tokens: Token[];
   errors: string[];
-  typeOf: (path: string) => string | undefined;
+  typeOf: ((path: string) => string | undefined) | undefined;
 }
 
 function parseToken(
@@ -182,9 +194,13 @@ function parseToken(
     w.errors.push(`${path}: unknown key "${unknown}"`);
     return;
   }
-  const resolved = type ?? w.typeOf(path);
+  const resolved = type ?? w.typeOf?.(path);
   if (resolved === undefined || !isTokenType(resolved)) {
-    w.errors.push(`${path}: no $type on the token or any group above it`);
+    w.errors.push(
+      w.typeOf === undefined
+        ? `${path}: no $type on the token or any group above it`
+        : `${path}: no such token in tokens.json`,
+    );
     return;
   }
   const raw = node.$value;
@@ -230,14 +246,15 @@ function walk(
   }
 }
 
-/** Parse a DTCG token document; `typeOf` supplies a type for paths the document leaves untyped. */
-export function parseTokens(
-  doc: unknown,
-  typeOf: (path: string) => string | undefined = () => undefined,
-): Parsed {
+/** Parse a DTCG token document; `typeOf` types an override file's paths from the base tokens. */
+export function parseTokens(doc: unknown, typeOf?: (path: string) => string | undefined): Parsed {
   if (!isRecord(doc)) return { tokens: [], errors: ['tokens: document must be an object'] };
+  const root = doc.$type;
+  if (root !== undefined && (typeof root !== 'string' || !isTokenType(root))) {
+    return { tokens: [], errors: [`tokens: unsupported $type ${JSON.stringify(root)}`] };
+  }
   const w: Walk = { tokens: [], errors: [], typeOf };
-  walk(doc, [], undefined, w);
+  walk(doc, [], root, w);
   return { tokens: w.tokens, errors: w.errors };
 }
 

@@ -137,8 +137,20 @@ describe('design-tokens CLI', () => {
   });
 
   it('reports an error in the dark file against that file', () => {
-    seed(TOKENS, { color: { gone: { $value: 1 } } });
-    expect(run(/design\/tokens\.dark\.json: color\.gone: no \$type/, '--check')).toEqual({
+    seed(TOKENS, { color: { fg: { $value: '#fff' } } });
+    expect(
+      run(/design\/tokens\.dark\.json: color\.fg: colors use the object form/, '--check'),
+    ).toEqual({
+      status: 1,
+      said: true,
+    });
+  });
+
+  it('names an untyped dark typo as missing from tokens.json', () => {
+    seed(TOKENS, { color: { fgg: { $value: '{color.ink}' } } });
+    expect(
+      run(/design\/tokens\.dark\.json: color\.fgg: no such token in tokens\.json/, '--check'),
+    ).toEqual({
       status: 1,
       said: true,
     });

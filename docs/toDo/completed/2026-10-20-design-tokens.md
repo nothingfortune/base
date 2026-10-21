@@ -1,6 +1,6 @@
 # Design Tokens Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Ship DTCG design tokens, generated CSS, and generated
 `@dsCard` preview cards in the base template, guarded by `npm run check`.
@@ -18,7 +18,7 @@ committed; `--check` regenerates them in memory and diffs.
 **Tech Stack:** TypeScript (strip-only subset), Node ≥ 22.18 (`.nvmrc`
 24), Vitest, no new dependencies.
 
-**Spec:** [`docs/designs/2026-10-20-design-tokens-design.md`](../designs/2026-10-20-design-tokens-design.md)
+**Spec:** [`docs/designs/2026-10-20-design-tokens-design.md`](../../designs/2026-10-20-design-tokens-design.md)
 
 ## Global Constraints
 
@@ -157,7 +157,7 @@ committed; `--check` regenerates them in memory and diffs.
   - An alias string `"{a.b}"` becomes `{ alias: 'a.b' }`.
   - An error is formatted `<path>: <reason>`.
 
-- [ ] **Step 1: Write the failing tests.** Each asserts one result.
+- [x] **Step 1: Write the failing tests.** Each asserts one result.
   - `parses a color token with group-inherited $type`: input
     `{color:{$type:'color', accent:{$value:{colorSpace:'srgb',components:[0,0.4,1],hex:'#0066ff'}}}}`
     gives exactly
@@ -191,18 +191,18 @@ committed; `--check` regenerates them in memory and diffs.
     `{ alias: 'color.accent' }`.
   - `rejects a non-object document`: `parseTokens(42).errors` equals
     `['tokens: document must be an object']`.
-- [ ] **Step 2: Run the tests and see them fail.**
+- [x] **Step 2: Run the tests and see them fail.**
       `npx vitest run tests/unit/lib/design-tokens.test.ts` should fail with
       "Failed to resolve import".
-- [ ] **Step 3: Implement `parseTokens`.**
+- [x] **Step 3: Implement `parseTokens`.**
   - Walk depth-first in key order.
   - A node with `$value` is a token.
   - `$type` inherits from the nearest ancestor; failing that, use
     `typeOf(path)`.
   - Collect all errors rather than stopping at the first.
-- [ ] **Step 4: Run the tests and see them pass.** Then
+- [x] **Step 4: Run the tests and see them pass.** Then
       `npm run test:coverage` should keep the floors.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
       `git commit -m "feat(design): parse and validate DTCG token files"`.
 
 ### Task 2: Resolve aliases and validate overrides
@@ -220,7 +220,7 @@ committed; `--check` regenerates them in memory and diffs.
   - Aliases in both sets resolve against `base`.
   - Dark paths must exist in `base`, with the same type.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - `accepts a transitive alias chain`: `a → b → c(color)` gives `[]`.
   - `reports a missing alias target`: the error matches
     `/^color\.fg: alias \{color\.nope\} has no target/`.
@@ -232,13 +232,13 @@ committed; `--check` regenerates them in memory and diffs.
     error equals `'dark: color.bg.surfce: no such token in tokens.json'`.
   - `reports a dark override that changes the type`.
   - `checks dark aliases too`.
-- [ ] **Step 2: Run the tests and see them fail.** Expect
+- [x] **Step 2: Run the tests and see them fail.** Expect
       "validateTokens is not a function".
-- [ ] **Step 3: Implement `validateTokens`.** Use a path map and a
+- [x] **Step 3: Implement `validateTokens`.** Use a path map and a
       visited list per walk.
-- [ ] **Step 4: Run the tests and see them pass.** Then
+- [x] **Step 4: Run the tests and see them pass.** Then
       `npm run test:coverage`.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
       `git commit -m "feat(design): resolve aliases and validate dark overrides"`.
 
 ### Task 3: Emit CSS
@@ -256,7 +256,7 @@ committed; `--check` regenerates them in memory and diffs.
   - `export function cssCollisions(tokens: readonly Token[]): string[]`
   - `export function emitCss(base: readonly Token[], dark: readonly Token[]): string`
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - `emits the exact stylesheet`: a fixture of a color with `hex`, a color
     with alpha 0.5 and no hex, a color with no hex and no alpha, an alias,
     a dimension `{value:8,unit:'px'}`, a fontFamily
@@ -281,11 +281,11 @@ committed; `--check` regenerates them in memory and diffs.
   - `emits no dark blocks when dark is empty`.
   - `cssCollisions reports a.b-c vs a-b.c` (Review Focus 2): the result
     equals `['--a-b-c: a.b-c and a-b.c']`.
-- [ ] **Step 2: Run the tests and see them fail.**
-- [ ] **Step 3: Implement the three functions.**
-- [ ] **Step 4: Run the tests and see them pass.** Then
+- [x] **Step 2: Run the tests and see them fail.**
+- [x] **Step 3: Implement the three functions.**
+- [x] **Step 4: Run the tests and see them pass.** Then
       `npm run test:coverage`.
-- [ ] **Step 5: Commit.** `git commit -m "feat(design): emit token CSS with dark theme"`.
+- [x] **Step 5: Commit.** `git commit -m "feat(design): emit token CSS with dark theme"`.
 
 ### Task 4: Emit preview cards and scan for markers
 
@@ -306,7 +306,7 @@ committed; `--check` regenerates them in memory and diffs.
     which returns the paths whose first line doesn't match
     `/^<!-- @dsCard group="[^"]+" -->$/`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - `every card starts with its @dsCard line`: `colors.html` starts with
     `<!-- @dsCard group="Colors" -->\n`, and likewise for Type, Spacing
     and Radius.
@@ -319,17 +319,17 @@ committed; `--check` regenerates them in memory and diffs.
   - `omits a card whose group has no tokens`.
   - `missingDsCard flags a blank first line, a marker on line 2, and a
 marker without a group`, and returns `[]` for a correct file.
-- [ ] **Step 2: Run the tests and see them fail.**
-- [ ] **Step 3: Implement the two functions.**
+- [x] **Step 2: Run the tests and see them fail.**
+- [x] **Step 3: Implement the two functions.**
   - Map tokens to cards by the first path segment:
     - `color` → Colors
     - `font` → Type
     - `space` → Spacing
     - `radius` → Radius
   - Card markup uses `var(<name(path)>)` and prints the path as a label.
-- [ ] **Step 4: Run the tests and see them pass.** Then
+- [x] **Step 4: Run the tests and see them pass.** Then
       `npm run test:coverage`.
-- [ ] **Step 5: Commit.** `git commit -m "feat(design): generate @dsCard preview cards"`.
+- [x] **Step 5: Commit.** `git commit -m "feat(design): generate @dsCard preview cards"`.
 
 ### Task 5: CLI, starter tokens, and the gate
 
@@ -367,7 +367,7 @@ marker without a group`, and returns `[]` for a correct file.
   It exits 0 when it writes or the check passes, and 1 on any error or
   drift, naming each file.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - `writes tokens.css and the previews`.
   - `--check passes right after a write`.
   - `--check fails naming tokens.css when it was hand-edited`.
@@ -383,8 +383,8 @@ marker`, which checks that the scan is recursive.
   - `--check fails when previews exist but tokens.json is missing`
     (Review Focus 5).
   - `tokens.dark.json is optional`.
-- [ ] **Step 2: Run the tests and see them fail.**
-- [ ] **Step 3: Implement the CLI.**
+- [x] **Step 2: Run the tests and see them fail.**
+- [x] **Step 3: Implement the CLI.**
   - Write the starter tokens:
     - `color.neutral.0`, `50`, `100`, `200`, `300`, `400`, `500`, `600`,
       `700`, `800`, `900`
@@ -400,7 +400,7 @@ marker`, which checks that the scan is recursive.
   - The dark file overrides only the `color.bg.*`, `color.fg.*`,
     `color.border.*` and `color.accent.*` tokens.
   - Run `npm run tokens`, then `npx prettier --write design/tokens*.json`.
-- [ ] **Step 4: Verify.**
+- [x] **Step 4: Verify.**
   - The tests pass, and `npm run design:check` and `npm run check` both
     pass.
   - Render `design/previews/colors.html` in light and dark with the
@@ -409,7 +409,7 @@ marker`, which checks that the scan is recursive.
   - The scope lane is already confirmed: the pinned `scope.yml` treats
     only `docs/*` and `*.md` as doc-only, so `design/**` takes the full
     lane.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
       `git commit -m "feat(design): token CLI, starter tokens, design:check in the gate"`.
 
 ### Task 6: Guide, living docs, and the opt-out proof
@@ -427,7 +427,7 @@ marker`, which checks that the scan is recursive.
 - `REPO_ROOTS` in `check-docs.mjs` is not extended, so `design/…` spans in
   living docs stay unchecked and opting out can't break `docs:check`.
 
-- [ ] **Step 1: Write the guide.** It covers:
+- [x] **Step 1: Write the guide.** It covers:
   - editing tokens: the color object form with `hex`, aliases, the dark
     file, and integer-like keys sorting first
   - `npm run tokens`
@@ -454,11 +454,11 @@ marker`, which checks that the scan is recursive.
 
   The guide links nothing under `docs/designs/` or `docs/toDo/`.
 
-- [ ] **Step 2: Update CLAUDE.md, the README and quality-gates.**
-- [ ] **Step 3: Prove the opt-out.** Copy the tracked tree to `$TMPDIR`
+- [x] **Step 2: Update CLAUDE.md, the README and quality-gates.**
+- [x] **Step 3: Prove the opt-out.** Copy the tracked tree to `$TMPDIR`
       with `node_modules` symlinked, apply the opt-out list, and run
       `npm run check` there. It should exit 0. Record the result in the commit
       body.
-- [ ] **Step 4: Verify.** `npm run check` passes in the repo.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Verify.** `npm run check` passes in the repo.
+- [x] **Step 5: Commit.**
       `git commit -m "docs(design): tokens guide, living-doc rows, opt-out proof"`.

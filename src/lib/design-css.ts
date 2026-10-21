@@ -24,7 +24,7 @@ export function cssName(path: string): string {
 }
 
 function quoteFamily(name: string): string {
-  return GENERIC.has(name) ? name : `"${name.replace(/[\\"]/g, (c) => `\\${c}`)}"`;
+  return GENERIC.has(name.toLowerCase()) ? name : `"${name.replace(/[\\"]/g, (c) => `\\${c}`)}"`;
 }
 
 function cssValue(value: Token['value']): string {

@@ -157,3 +157,9 @@ describe('cssCollisions', () => {
     expect(cssCollisions([accent])).toEqual([]);
   });
 });
+
+describe('generic family case', () => {
+  it('leaves a generic family unquoted whatever its case', () => {
+    expect(family('Sans-Serif')).toBe('  --f: Sans-Serif;');
+  });
+});

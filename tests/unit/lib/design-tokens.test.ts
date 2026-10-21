@@ -243,3 +243,36 @@ describe('validateTokens in dark mode', () => {
     ]);
   });
 });
+
+describe('review fixes', () => {
+  it('names an untyped override with no base token as missing from tokens.json', () => {
+    expect(parseTokens({ color: { bgg: { $value: 1 } } }, () => undefined).errors).toEqual([
+      'color.bgg: no such token in tokens.json',
+    ]);
+  });
+
+  it('rejects a control character in a font family', () => {
+    expect(errorsOf({ f: { $type: 'fontFamily', a: { $value: 'A\nX' } } })).toEqual([
+      expect.stringMatching(/^f\.a: fontFamily must not contain control characters/),
+    ]);
+  });
+
+  it('rejects a control character inside a font family list', () => {
+    expect(errorsOf({ f: { $type: 'fontFamily', a: { $value: ['ok', 'A\tX'] } } })).toEqual([
+      expect.stringMatching(/^f\.a: fontFamily must not contain control characters/),
+    ]);
+  });
+
+  it('applies a $type set at the document root', () => {
+    expect(parseTokens({ $type: 'number', a: { $value: 1 } })).toEqual({
+      tokens: [{ path: 'a', type: 'number', value: 1 }],
+      errors: [],
+    });
+  });
+
+  it('rejects an unsupported $type at the document root', () => {
+    expect(errorsOf({ $type: 'shadow', a: { $value: 1 } })).toEqual([
+      'tokens: unsupported $type "shadow"',
+    ]);
+  });
+});
