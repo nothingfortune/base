@@ -173,6 +173,24 @@ function checkValue(type: TokenType, raw: unknown): Check {
   }
 }
 
+function metaError(node: Record<string, unknown>): string | undefined {
+  if (node.$description !== undefined && typeof node.$description !== 'string') {
+    return '$description must be a string';
+  }
+  const deprecated = node.$deprecated;
+  if (
+    deprecated !== undefined &&
+    typeof deprecated !== 'boolean' &&
+    typeof deprecated !== 'string'
+  ) {
+    return '$deprecated must be a boolean or a string';
+  }
+  if (node.$extensions !== undefined && !isRecord(node.$extensions)) {
+    return '$extensions must be an object';
+  }
+  return undefined;
+}
+
 interface Walk {
   tokens: Token[];
   errors: string[];
@@ -192,6 +210,11 @@ function parseToken(
   const unknown = Object.keys(node).find((k) => !META.has(k));
   if (unknown !== undefined) {
     w.errors.push(`${path}: unknown key "${unknown}"`);
+    return;
+  }
+  const meta = metaError(node);
+  if (meta !== undefined) {
+    w.errors.push(`${path}: ${meta}`);
     return;
   }
   const resolved = type ?? w.typeOf?.(path);
@@ -241,8 +264,13 @@ function walk(
       w.errors.push(`${at}: unsupported $type ${JSON.stringify(own)}`);
       continue;
     }
-    if ('$value' in child) parseToken(child, at, own ?? type, w);
-    else walk(child, childPath, own ?? type, w);
+    if ('$value' in child) {
+      parseToken(child, at, own ?? type, w);
+      continue;
+    }
+    const meta = metaError(child);
+    if (meta !== undefined) w.errors.push(`${at}: ${meta}`);
+    walk(child, childPath, own ?? type, w);
   }
 }
 
@@ -253,6 +281,8 @@ export function parseTokens(doc: unknown, typeOf?: (path: string) => string | un
   if (root !== undefined && (typeof root !== 'string' || !isTokenType(root))) {
     return { tokens: [], errors: [`tokens: unsupported $type ${JSON.stringify(root)}`] };
   }
+  const meta = metaError(doc);
+  if (meta !== undefined) return { tokens: [], errors: [`tokens: ${meta}`] };
   const w: Walk = { tokens: [], errors: [], typeOf };
   walk(doc, [], root, w);
   return { tokens: w.tokens, errors: w.errors };

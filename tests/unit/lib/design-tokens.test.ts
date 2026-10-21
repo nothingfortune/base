@@ -276,3 +276,41 @@ describe('review fixes', () => {
     ]);
   });
 });
+
+describe('metadata values', () => {
+  it.each([
+    [
+      'a group $description that is not a string',
+      { n: { $type: 'number', $description: 42, a: { $value: 1 } } },
+      'n: $description must be a string',
+    ],
+    [
+      'a token $description that is not a string',
+      { n: { $type: 'number', a: { $value: 1, $description: 42 } } },
+      'n.a: $description must be a string',
+    ],
+    [
+      'a $deprecated that is neither boolean nor string',
+      { n: { $type: 'number', a: { $value: 1, $deprecated: 1 } } },
+      'n.a: $deprecated must be a boolean or a string',
+    ],
+    [
+      'an $extensions that is not an object',
+      { n: { $type: 'number', $extensions: [], a: { $value: 1 } } },
+      'n: $extensions must be an object',
+    ],
+    [
+      'a root $description that is not a string',
+      { $description: false, n: { $type: 'number', a: { $value: 1 } } },
+      'tokens: $description must be a string',
+    ],
+  ])('rejects %s', (_label, doc, error) => {
+    expect(errorsOf(doc)).toEqual([error]);
+  });
+
+  it('accepts a string $deprecated', () => {
+    expect(errorsOf({ n: { $type: 'number', a: { $value: 1, $deprecated: 'use b' } } })).toEqual(
+      [],
+    );
+  });
+});

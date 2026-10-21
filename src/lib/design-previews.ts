@@ -9,7 +9,7 @@ interface Card {
   item: (token: Token, name: Name) => string;
 }
 
-const MARKER = /^<!-- @dsCard group="[^"]+" -->(?:\r?\n|$)/;
+const MARKER = /^<!-- @dsCard group="[^"\r\n]+" -->(?:\r?\n|$)/;
 const SAMPLE = 'The quick brown fox jumps over the lazy dog';
 
 function escapeHtml(text: string): string {

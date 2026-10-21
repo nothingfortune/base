@@ -117,3 +117,10 @@ describe('missingDsCard', () => {
     ).toEqual(['blank.html', 'second.html', 'nogroup.html']);
   });
 });
+
+describe('missingDsCard group line', () => {
+  it('flags a group that spills past the first line', () => {
+    const content = '<!-- @dsCard group="Colors\nstill-group" -->\n<!doctype html>';
+    expect(missingDsCard([{ path: 'spill.html', content }])).toEqual(['spill.html']);
+  });
+});
