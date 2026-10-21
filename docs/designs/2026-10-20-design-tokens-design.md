@@ -52,8 +52,9 @@ layout, which Claude then has to rediscover per repo.
   2026-12-14 (DesignSync's own tool description), with design moving into
   Claude. DTCG JSON and CSS custom properties stay useful either way. The
   `@dsCard` marker is one HTML comment and costs nothing if the pane goes away.
-- A clone without a UI paying for this. Deleting `design/` must leave `check`
-  green. The design check treats a missing `design/` as opted out.
+- A clone without a UI paying for this. Deleting the guide's opt-out
+  list (`design/`, the libraries, CLI, tests and doc rows) must leave
+  `check` green. The design check treats a missing `design/` as opted out.
 - A red CI run on the template, or on any clone that hasn't set up
   Cloudflare, caused by this change (see Deploy).
 - Hand-edited generated CSS drifting from the JSON.
@@ -118,7 +119,9 @@ layout, which Claude then has to rediscover per repo.
   - Output is deterministic: source order, a generated-file header, and a
     trailing newline.
 - **Code.**
-  - `src/lib/design-tokens.ts` holds the pure functions: parse/validate,
+  - `src/lib/design-tokens.ts` (parse, validate), `design-css.ts`
+    (emit CSS) and `design-previews.ts` (cards, marker scan) hold the pure
+    functions: parse/validate,
     resolve aliases, flatten, and emit CSS. It has no IO.
   - A thin CLI reads the files and writes, or with `--check` compares.
   - New scripts: `npm run tokens` generates. `npm run design:check` runs the
@@ -153,23 +156,26 @@ layout, which Claude then has to rediscover per repo.
   `docs/designs/handoff/`, which this change does not create. Previews live in
   `design/previews/`, so nothing wakes the Cloudflare deploy.
   - The guide explains how a project opts in: set `path` to
-    `design/previews` (with `design/tokens.css` reachable), add the secrets,
-    and widen the trigger paths.
+    `design` (cards then serve at `/previews/*.html` and `../tokens.css`
+    resolves; the shared workflow has no build step), add the secrets, and
+    set the trigger paths to `design/**`.
   - Decided by the user (2026-10-20): deploy stays opt-in, so CI stays green
     on the template and on fresh clones.
 
 - **Opting out.** The guide lists what a clone without a UI deletes:
   - `design/`
-  - `src/lib/design-tokens.ts` and its test
-  - the CLI
+  - the three `src/lib/design-*.ts` libraries and their tests
+  - the CLI and its test
   - the `tokens` and `design:check` scripts, and `design:check` in `check`
+  - the `.prettierignore` lines
+  - the CLAUDE.md, README and quality-gates entries
+  - the guide itself
 
   No `bin/init.sh` flag. My call: one documented list is cheaper than a flag
   and its tests, and the code is small.
 
-- **CI lane.** The builder confirms that a change under `design/` (JSON,
-  CSS, HTML) takes the full `check` lane, not the doc-only lane, in the
-  shared `scope.yml` classifier.
+- **CI lane.** Confirmed: the pinned `scope.yml` treats only `docs/*` and
+  `*.md` as doc-only, so `design/**` takes the full `check` lane.
 
 ## Left to the builder
 
