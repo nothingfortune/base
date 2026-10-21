@@ -178,7 +178,9 @@ describe('design-tokens CLI', () => {
   });
 
   it('tokens.dark.json is optional', () => {
-    seed(TOKENS, undefined);
+    seed();
+    unlinkSync(at('tokens.dark.json'));
+    expect(existsSync(at('tokens.dark.json'))).toBe(false);
     write();
     expect(run(/design:check OK/, '--check')).toEqual({ status: 0, said: true });
   });

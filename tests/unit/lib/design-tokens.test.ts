@@ -160,6 +160,9 @@ describe('parseTokens', () => {
     ['fontWeight', 'heavyish'],
     ['fontWeight', 1001],
     ['fontWeight', 0],
+    ['fontWeight', 'constructor'],
+    ['fontWeight', 'toString'],
+    ['fontWeight', '__proto__'],
     ['number', '3'],
     ['number', Number.POSITIVE_INFINITY],
   ])('rejects a %s of %j', (type, value) => {

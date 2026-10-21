@@ -150,7 +150,7 @@ function checkFamily(raw: unknown): Check {
 
 function checkWeight(raw: unknown): Check {
   if (typeof raw === 'number' && raw >= 1 && raw <= 1000) return ok(raw);
-  const weight = typeof raw === 'string' ? WEIGHTS[raw] : undefined;
+  const weight = typeof raw === 'string' && Object.hasOwn(WEIGHTS, raw) ? WEIGHTS[raw] : undefined;
   return weight === undefined ? fail('fontWeight must be 1–1000 or a DTCG keyword') : ok(weight);
 }
 
