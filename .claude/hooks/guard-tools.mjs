@@ -2,7 +2,6 @@
 // PreToolUse hook: keeps agents out of .env files (except *.example) and stops shell changes to .claude/ settings and hooks.
 // Shell checks read command text, so they stop accidents, not a determined bypass: https://code.claude.com/docs/en/permissions
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
 
 const SHELLS = new Set(['Bash', 'PowerShell']);
 const ENV_NAME = /(?<![\w$-])\.env[\w.-]*/g;
@@ -35,25 +34,53 @@ function globCouldStartWithE(n) {
   return close !== -1 && !/^[0-9:-]*$/.test(n.slice(2, close));
 }
 
-// Letter ranges like {d..f} spelled out, so the brace check sees every letter they produce.
-function expandRanges(n) {
-  return n.replace(/\{(.)\.\.(.)\}/g, (_, lo, hi) => {
-    let out = '';
-    for (let c = lo.charCodeAt(0); c <= hi.charCodeAt(0); c++) out += String.fromCharCode(c);
-    return out;
-  });
+const NUMBER_RANGE = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/;
+const LETTER_RANGE = /^(.)\.\.(.)(?:\.\.-?\d+)?$/;
+
+// The alternatives one brace group yields; a step is ignored, so a range yields a superset.
+function alternatives(inner) {
+  if (NUMBER_RANGE.test(inner)) return ['0'];
+  const range = LETTER_RANGE.exec(inner);
+  if (range) {
+    const [lo, hi] = [range[1], range[2]].map((c) => c.charCodeAt(0)).sort((a, b) => a - b);
+    return Array.from({ length: hi - lo + 1 }, (_, i) => String.fromCharCode(lo + i));
+  }
+  if (inner.includes('..')) return null;
+  return inner.includes(',') ? inner.split(',') : undefined;
 }
 
-// A dotfile name, or a glob or brace expansion that could become one, other than a plain *.example name.
-function envLike(name) {
-  const n = name.toLowerCase();
-  if (!/[{}*?[\]]/.test(n) && n.includes('.example')) return false;
-  if (/\{[^}]*(?:,|\.\.)[^}]*\}/.test(n)) {
-    const spelled = expandRanges(n);
-    return spelled.replace(/\.\./g, '').includes('.') && spelled.includes('e');
+// Every word bash brace expansion makes of `word`, or null when it cannot be worked out safely.
+function expandBraces(word) {
+  const words = [];
+  const queue = [word];
+  while (queue.length > 0) {
+    const w = queue.pop();
+    const group = [...w.matchAll(/\{([^{}]*)\}/g)]
+      .map((m) => ({ m, alts: alternatives(m[1]) }))
+      .find((g) => g.alts !== undefined);
+    if (group === undefined) words.push(w);
+    else if (group.alts === null) return null;
+    else {
+      const { index } = group.m;
+      const rest = w.slice(index + group.m[0].length);
+      queue.push(...group.alts.map((a) => w.slice(0, index) + a + rest));
+    }
+    if (words.length + queue.length > 1024) return null;
   }
+  return words;
+}
+
+// A dotfile name or a glob that could match one, other than a plain *.example name.
+function dotEnvLike(n) {
+  if (!/[*?[\]]/.test(n) && n.includes('.example')) return false;
   if (!n.startsWith('.')) return false;
   return n.startsWith('.env') || (/[*?[]/.test(n) && globCouldStartWithE(n));
+}
+
+// Whether `name`, or any word its braces expand to, is .env-like.
+function envLike(name) {
+  const words = expandBraces(name.toLowerCase());
+  return words === null || words.some((w) => dotEnvLike(w.slice(w.lastIndexOf('/') + 1)));
 }
 
 // Options are refused outright: allowlisting flags loses to abbreviations like --out for --output.
@@ -94,15 +121,21 @@ function checkCommand(command) {
   }
 }
 
+// The cwd-relative deny rules miss settings and hooks in other folders, so mutating tools are checked here.
+const CONFIG_FILE = /(?:^|\/)\.claude\/(?:settings(?:\.local)?\.json$|hooks(?:\/|$))/;
+const MUTATING = new Set(['Edit', 'Write', 'NotebookEdit']);
+
 function checkFiles(input) {
-  const paths = [input.file_path, input.notebook_path, input.path];
-  const globs = [input.glob, input.tool === 'Glob' ? input.pattern : undefined];
-  const names = [
-    ...paths.map((p) => (typeof p === 'string' ? path.basename(p) : '')),
-    ...globs.map((g) => (typeof g === 'string' ? g.slice(g.lastIndexOf('/') + 1) : '')),
-  ];
-  const env = names.filter(envLike);
+  const slashed = (v) => (typeof v === 'string' ? v.toLowerCase().replace(/\\/g, '/') : '');
+  const paths = [input.file_path, input.notebook_path, input.path].map(slashed);
+  const globs = [input.glob, input.tool === 'Glob' ? input.pattern : undefined].map(slashed);
+  const env = [...paths, ...globs].filter((p) => p !== '' && envLike(p));
   if (env.length > 0) blockEnv(env);
+  if (MUTATING.has(input.tool) && paths.some((p) => CONFIG_FILE.test(p))) {
+    block(
+      'Blocked: .claude/ settings and hooks are read-only for agents, in any folder; ask the user to make the change.',
+    );
+  }
 }
 
 let input;

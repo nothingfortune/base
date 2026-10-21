@@ -183,11 +183,45 @@ describe('evasions from the commit security review', () => {
     'cat .{d..f}nv',
     'cat .{env,x.example}',
     'cat {.env,a.example}',
+    'cat .{d..f..1}nv',
+    'cat .{a..z..4}nv',
+    'cat .{d..f..1..}nv',
   ])('blocks %j', (command) => {
     expect(bash(command, ENV_BLOCK)).toEqual({ status: 2, said: true });
   });
 
-  it.each(['for i in {1..5}; do echo $i; done', "jq '.[0-9]' f.json"])('allows %j', (command) => {
+  it.each([
+    'for i in {1..5}; do echo $i; done',
+    'for i in {1..10..2}; do echo $i; done',
+    "jq '.[0-9]' f.json",
+  ])('allows %j', (command) => {
+    expect(bash(command)).toEqual(ALLOWED);
+  });
+});
+
+describe('file tools and .claude/ settings and hooks outside the session folder', () => {
+  it.each([
+    ['Edit', { file_path: '/elsewhere/.claude/hooks/guard-tools.mjs' }],
+    ['Write', { file_path: '/elsewhere/.claude/settings.local.json' }],
+    ['Edit', { file_path: '/elsewhere/.claude/settings.json' }],
+    ['Write', { file_path: 'C:\\elsewhere\\.claude\\settings.json' }],
+  ])('blocks %s %j', (tool_name, tool_input) => {
+    expect(hook({ tool_name, tool_input }, CONFIG_BLOCK)).toEqual({ status: 2, said: true });
+  });
+
+  it.each([
+    ['Read', { file_path: '/elsewhere/.claude/settings.json' }],
+    ['Edit', { file_path: '/elsewhere/.claude/skills/notes.md' }],
+  ])('allows %s %j', (tool_name, tool_input) => {
+    expect(hook({ tool_name, tool_input })).toEqual(ALLOWED);
+  });
+});
+
+describe('brace expansion is checked by expanding it', () => {
+  it.each([
+    "gh api repos/o/r/pulls/1 --jq '{state:.state,sha:.head.sha}'",
+    "jq '{a:.e,b:.c}' f.json",
+  ])('allows the compact jq object %j', (command) => {
     expect(bash(command)).toEqual(ALLOWED);
   });
 });
@@ -209,6 +243,12 @@ describe('Windows paths in PowerShell commands', () => {
     'Remove-Item .claude\\hooks\\guard-tools.mjs',
   ])('blocks the .claude path %j', (command) => {
     expect(ps(command, CONFIG_BLOCK)).toEqual({ status: 2, said: true });
+  });
+
+  it('blocks a file tool given a Windows .env path', () => {
+    expect(
+      hook({ tool_name: 'Read', tool_input: { file_path: 'C:\\elsewhere\\.env' } }, ENV_BLOCK),
+    ).toEqual({ status: 2, said: true });
   });
 
   it('allows a Windows path to an .example file', () => {
