@@ -10,42 +10,45 @@ This is a template base repo, this file needs to be updated to match specific pr
 
 `npm run check` is the gate. It must pass before you claim work is done.
 
-| Command                                   | Purpose                                                                                                   |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `npm run check`                           | typecheck + lint + comment density + integrity + format check + coverage + drift + bin tests + docs check |
-| `npm run typecheck`                       | `tsc --noEmit`                                                                                            |
-| `npm run lint` / `npm run lint:fix`       | ESLint, `--max-warnings 0`                                                                                |
-| `npm run comment-density`                 | Multi-line comment blocks must equal `comment-density-baseline.json`                                      |
-| `npm run integrity`                       | Integrity engine: broken references, dead code, import cycles (`build/integrity/report.json`)             |
-| `npm run format` / `npm run format:check` | Prettier                                                                                                  |
-| `npm test` / `npm run test:watch`         | Vitest (the fast loop; no coverage)                                                                       |
-| `npm run test:coverage`                   | Vitest with v8 coverage against the floors in `vitest.config.ts`                                          |
-| `npm run coverage:drift`                  | Fails when a floor sits more than 2 points under measured coverage                                        |
-| `npm run test:bin`                        | Bash tests for `bin/` scripts and repo guards                                                             |
-| `npm run docs:check`                      | Relative links and living-doc repo paths resolve                                                          |
-| `npm run test:mutation`                   | Stryker mutation run; informational, never part of `check`                                                |
-| `bin/setup-github.sh [--dry-run]`         | Apply the default-branch ruleset and repo settings; safe to re-run                                        |
+| Command                                   | Purpose                                                                                                                  |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `npm run check`                           | typecheck + lint + comment density + integrity + format check + coverage + drift + bin tests + docs check + design check |
+| `npm run typecheck`                       | `tsc --noEmit`                                                                                                           |
+| `npm run lint` / `npm run lint:fix`       | ESLint, `--max-warnings 0`                                                                                               |
+| `npm run comment-density`                 | Multi-line comment blocks must equal `comment-density-baseline.json`                                                     |
+| `npm run integrity`                       | Integrity engine: broken references, dead code, import cycles (`build/integrity/report.json`)                            |
+| `npm run format` / `npm run format:check` | Prettier                                                                                                                 |
+| `npm test` / `npm run test:watch`         | Vitest (the fast loop; no coverage)                                                                                      |
+| `npm run test:coverage`                   | Vitest with v8 coverage against the floors in `vitest.config.ts`                                                         |
+| `npm run coverage:drift`                  | Fails when a floor sits more than 2 points under measured coverage                                                       |
+| `npm run test:bin`                        | Bash tests for `bin/` scripts and repo guards                                                                            |
+| `npm run docs:check`                      | Relative links and living-doc repo paths resolve                                                                         |
+| `npm run tokens`                          | Regenerate `design/tokens.css` and the `@dsCard` preview cards from the token JSON                                       |
+| `npm run design:check`                    | Token files valid; generated CSS and cards current; every `design/**/*.html` has its `@dsCard` line                      |
+| `npm run test:mutation`                   | Stryker mutation run; informational, never part of `check`                                                               |
+| `bin/setup-github.sh [--dry-run]`         | Apply the default-branch ruleset and repo settings; safe to re-run                                                       |
 
 What each gate enforces, and how to move its ratchet, is in
 `docs/guides/quality-gates.md`.
 
 ## Layout
 
-| Path             | Contents                                                                      |
-| ---------------- | ----------------------------------------------------------------------------- |
-| `src/`           | Application code. Entry point is `src/index.ts`.                              |
-| `src/lib/`       | Reusable logic with no framework or IO coupling.                              |
-| `src/types/`     | Types shared across modules. Types used in one module stay in that module.    |
-| `src/config/`    | Configuration loading and environment parsing.                                |
-| `tests/unit/`    | Vitest specs, mirroring `src/` paths; tooling specs in `tests/unit/scripts/`. |
-| `tests/e2e/`     | Playwright specs. Not installed by default.                                   |
-| `tests/support/` | Shared test helpers (`thrown()` / `thrownAsync()`).                           |
-| `bin/`           | Shell scripts (build helpers, AI PR-review loop).                             |
-| `tests/bin/`     | Bash tests for `bin/` scripts, run by `tests/bin/run.sh`.                     |
-| `scripts/`       | Repo-local Node/TS tooling.                                                   |
-| `docs/designs/`  | Design docs, named `YYYY-MM-DD-topic-design.md`.                              |
-| `docs/guides/`   | How-to documentation.                                                         |
-| `docs/toDo/`     | Active plans. Move to `docs/toDo/completed/` when finished.                   |
+| Path             | Contents                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| `src/`           | Application code. Entry point is `src/index.ts`.                                      |
+| `src/lib/`       | Reusable logic with no framework or IO coupling.                                      |
+| `src/types/`     | Types shared across modules. Types used in one module stay in that module.            |
+| `src/config/`    | Configuration loading and environment parsing.                                        |
+| `tests/unit/`    | Vitest specs, mirroring `src/` paths; tooling specs in `tests/unit/scripts/`.         |
+| `tests/e2e/`     | Playwright specs. Not installed by default.                                           |
+| `tests/support/` | Shared test helpers (`thrown()` / `thrownAsync()`).                                   |
+| `bin/`           | Shell scripts (build helpers, AI PR-review loop).                                     |
+| `tests/bin/`     | Bash tests for `bin/` scripts, run by `tests/bin/run.sh`.                             |
+| `scripts/`       | Repo-local Node/TS tooling.                                                           |
+| `docs/designs/`  | Design docs, named `YYYY-MM-DD-topic-design.md`.                                      |
+| `design/`        | DTCG design tokens, generated CSS and preview cards (`docs/guides/design-tokens.md`). |
+| `docs/guides/`   | How-to documentation.                                                                 |
+| `docs/toDo/`     | Active plans. Move to `docs/toDo/completed/` when finished.                           |
 
 ## TypeScript
 
