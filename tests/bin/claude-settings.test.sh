@@ -13,8 +13,10 @@ for rule in 'Edit(.claude/settings.json)' 'Edit(.claude/settings.local.json)' 'E
 done
 # A ! carve-out only works listed after the rule it narrows.
 assert_eq 'true' "$(q '.permissions.deny.indexOf("Read(!**/.env*.example*)") > s.permissions.deny.indexOf("Read(**/.env*)")')" "the .example carve-out follows the .env deny"
-assert_eq '"node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-bash.mjs\""' \
-  "$(q '.hooks?.PreToolUse?.find(h => h.matcher === "Bash")?.hooks?.[0]?.command')" "Bash commands pass through guard-bash.mjs"
+GUARDED='Bash|PowerShell|Read|Edit|Write|NotebookEdit|Grep|Glob'
+assert_eq '"node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-tools.mjs\""' \
+  "$(q ".hooks?.PreToolUse?.find(h => h.matcher === '$GUARDED')?.hooks?.[0]?.command")" "shell and file tools pass through guard-tools.mjs"
+assert_eq 'false' "$(node -e 'process.stdout.write(String(require("fs").existsSync(process.argv[1])))' "$ROOT/.claude/hooks/guard-bash.mjs")" "the old guard-bash.mjs is gone"
 # Claude Code never consults Write(path) rules; Edit(...) already covers the Write tool.
 assert_eq 'false' "$(q '.permissions?.deny?.some(r => r.startsWith("Write("))')" "no dead Write(...) rules"
 # macOS mktemp ignores $TMPDIR without a template, and the sandbox only allows writes under $TMPDIR.

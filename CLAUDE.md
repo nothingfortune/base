@@ -124,7 +124,8 @@ accompany bug fixes; mark incomplete implementations.
 - Docs name the command, not the count it prints; counts go stale.
 - Agents may not read or edit `.env*` files (only `*.example` ones) or change
   `.claude/` settings and hooks: deny rules in `.claude/settings.json`, plus
-  `.claude/hooks/guard-bash.mjs` for shell commands. Ask the user instead.
+  `.claude/hooks/guard-tools.mjs` for shell commands and paths outside the
+  session folder. Ask the user instead.
 
 ## CI
 
