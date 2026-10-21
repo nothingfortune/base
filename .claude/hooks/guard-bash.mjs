@@ -4,10 +4,14 @@
 import { readFileSync } from 'node:fs';
 
 const ENV_FILE = /(?:^|[^\w.$-])(\.env[\w.-]*)/g;
-const AGENT_CONFIG = /(?:^|[\s"'=/])\.claude(?:\/(?:settings|hooks)|\/?(?=[\s"';&|)]|$))/;
+const ENV_GLOB = /(?:^|[^\w.$-])(\.e[\w.-]*[*?[]\S*)/g;
+const AGENT_CONFIG = /(?:^|[\s=/])\.claude(?:\/(?:settings|hooks)|\/?(?=[\s;&|)]|$))/;
 const CHAINED = /[;&|<>`]|\$\(/;
-const READ_ONLY = /^\s*(?:cat|head|tail|less|ls|wc|grep|rg|diff|stat|file|jq)\s/;
+// No rg (--pre runs a program) and no less (! runs a shell).
+const READ_ONLY = /^\s*(?:cat|head|tail|ls|wc|grep|diff|stat|file|jq)\s/;
 const GIT_READ = /^\s*git\s+(?:add|diff|status|log|show|ls-files|blame|commit)\b/;
+// git --output writes a file; --ext-diff and --pre run programs.
+const UNSAFE_FLAG = /\s--?(?:output|ext-diff|pre)\b/;
 
 function block(reason) {
   console.error(reason);
@@ -18,12 +22,16 @@ let command;
 try {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   if (input.tool_name !== 'Bash') process.exit(0);
-  command = String(input.tool_input?.command ?? '');
+  // Quotes and redundant path segments are stripped so '.claude'/x and .claude//x match like .claude/x.
+  command = String(input.tool_input?.command ?? '')
+    .replace(/["']/g, '')
+    .replace(/\/(?:\.\/)+/g, '/')
+    .replace(/\/{2,}/g, '/');
 } catch {
   block('guard-bash: could not read the hook input; blocking to be safe.');
 }
 
-const envFiles = [...command.matchAll(ENV_FILE)]
+const envFiles = [...command.matchAll(ENV_FILE), ...command.matchAll(ENV_GLOB)]
   .map((m) => m[1])
   .filter((name) => !name.includes('.example'));
 if (envFiles.length > 0) {
@@ -32,7 +40,10 @@ if (envFiles.length > 0) {
   );
 }
 
-const readOnly = !CHAINED.test(command) && (READ_ONLY.test(command) || GIT_READ.test(command));
+const readOnly =
+  !CHAINED.test(command) &&
+  !UNSAFE_FLAG.test(command) &&
+  (READ_ONLY.test(command) || GIT_READ.test(command));
 if (AGENT_CONFIG.test(command) && !readOnly) {
   block(
     'Blocked: .claude/ settings and hooks are read-only for agents. Only a single read-only command (cat, ls, git add/diff/log, …) may name them; ask the user to make the change.',

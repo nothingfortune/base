@@ -71,6 +71,32 @@ describe('guard-bash: agent settings and hooks', () => {
   });
 });
 
+describe('guard-bash: evasions the security review found', () => {
+  it.each([
+    'rg --pre \'sh -c "echo x > $0"\' x .claude/settings.json',
+    'less .claude/settings.json',
+    'git diff --output=.claude/settings.json',
+    'git log --ext-diff -- .claude/hooks',
+    'echo {} > .claude//settings.json',
+    'echo {} > ./.claude/./settings.json',
+    "echo {} > '.claude'/settings.json",
+    'echo {} > ".claude/settings.json"',
+  ])('blocks %j', (command) => {
+    expect(guard(command, /\.claude\/ settings and hooks/)).toEqual({ status: 2, said: true });
+  });
+
+  it.each(['cat .e*', 'cat .en?', 'cat .env[.]local', "cat '.env'", 'cat ".env".local'])(
+    'blocks the .env evasion %j',
+    (command) => {
+      expect(guard(command, /\.env files are off-limits/)).toEqual({ status: 2, said: true });
+    },
+  );
+
+  it('still allows git add on a protected path', () => {
+    expect(guard('git add .claude/settings.json')).toEqual(ALLOWED);
+  });
+});
+
 describe('guard-bash: input handling', () => {
   it('allows a non-Bash payload', () => {
     const r = spawnSync(process.execPath, [HOOK], {
