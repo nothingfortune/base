@@ -1,12 +1,26 @@
 {
-  "sandbox": {
-    "enabled": true,
-    "allowUnsandboxedCommands": false,
-    "network": {
-      "enableWeakerNetworkIsolation": true
-    }
-  },
   "permissions": {
-    "deny": ["Edit(.claude/settings.json)"]
+    "deny": [
+      "Edit(.claude/settings.json)",
+      "Edit(.claude/settings.local.json)",
+      "Edit(.claude/hooks/**)",
+      "Read(**/.env*)",
+      "Read(!**/.env*.example*)",
+      "Edit(**/.env*)",
+      "Edit(!**/.env*.example*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|Read|Edit|Write|NotebookEdit|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-tools.mjs\""
+          }
+        ]
+      }
+    ]
   }
 }
