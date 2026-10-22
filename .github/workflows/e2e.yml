@@ -3,11 +3,11 @@ name: e2e
 # Draft-skipped Playwright layer; dormant until this repo has a
 # playwright.config.*. Run the reviews-done gate as DRAFT_SKIPPED_CHECK=e2e.
 #
-# Skips are job-level `if:` gates, never workflow-level path filters —
-# `e2e / e2e` is a required check on this repo, and a path-filtered workflow
-# creates no check run (PR blocked forever), while a skipped job reports
-# "skipped" and satisfies protection. The classifier is the shared scope.yml;
-# unknown runs e2e.
+# `e2e / e2e` is a required check, so this job has no `if:`. A skipped job
+# that calls a reusable workflow reports as `e2e`, never `e2e / e2e`, which
+# left doc-only PRs blocked forever. The shared workflow skips drafts inside,
+# where the skip keeps the full name. Doc-only PRs run it too: a no-op until
+# Playwright is adopted.
 
 on:
   push:
@@ -24,15 +24,5 @@ permissions:
   contents: read
 
 jobs:
-  # Shared classifier; unknown runs e2e, the same direction as ci.yml.
-  scope:
-    uses: nothingfortune/workflows/.github/workflows/scope.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
-
-  # Draft guard included: the sibling comment above always CLAIMED
-  # draft-skipped, but the job had no guard (the same 0-of-1 wiring gap
-  # dollyVision had at 2-of-3). `!cancelled()` per ci.yml: a failing scope
-  # job must not skip the gate.
   e2e:
-    needs: scope
-    if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false) }}
     uses: nothingfortune/workflows/.github/workflows/e2e.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
