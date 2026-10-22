@@ -115,6 +115,8 @@ describe('file tools and .env files outside the permission rules', () => {
     ['Grep', { pattern: 'KEY', path: '/elsewhere/.env' }],
     ['Grep', { pattern: 'KEY', path: '/elsewhere', glob: '.env*' }],
     ['Glob', { pattern: '**/.env*', path: '/elsewhere' }],
+    ['Grep', { pattern: 'KEY', path: '/elsewhere', glob: '{a/../,}.env' }],
+    ['Glob', { pattern: '{a/../,}.env', path: '/elsewhere' }],
   ])('blocks %s %j', (tool_name, tool_input) => {
     expect(hook({ tool_name, tool_input }, ENV_BLOCK)).toEqual({ status: 2, said: true });
   });

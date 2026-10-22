@@ -130,11 +130,15 @@ const CONFIG_FILE = /(?:^|\/)\.claude\/(?:settings(?:\.local)?\.json$|hooks(?:\/
 const MUTATING = new Set(['Edit', 'Write', 'NotebookEdit']);
 
 function checkFiles(input) {
-  const slashed = (v) =>
-    typeof v === 'string' ? path.posix.normalize(v.toLowerCase().replace(/\\/g, '/')) : '';
-  const paths = [input.file_path, input.notebook_path, input.path].map(slashed);
-  const globs = [input.glob, input.tool === 'Glob' ? input.pattern : undefined].map(slashed);
-  const env = [...paths, ...globs].filter((p) => p !== '' && envLike(p));
+  // Normalizing can break a brace group apart ({a/../,}.env), so raw and normalized forms are both checked.
+  const forms = (v) => {
+    if (typeof v !== 'string') return [];
+    const raw = v.toLowerCase().replace(/\\/g, '/');
+    return [raw, path.posix.normalize(raw)];
+  };
+  const paths = [input.file_path, input.notebook_path, input.path].flatMap(forms);
+  const globs = [input.glob, input.tool === 'Glob' ? input.pattern : undefined].flatMap(forms);
+  const env = [...new Set([...paths, ...globs])].filter((p) => p !== '' && envLike(p));
   if (env.length > 0) blockEnv(env);
   if (MUTATING.has(input.tool) && paths.some((p) => CONFIG_FILE.test(p))) {
     block(
