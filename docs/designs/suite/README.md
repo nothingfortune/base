@@ -32,7 +32,8 @@ re-export; do not hand-edit the bundled HTML.
 
 1. Add the repository secrets `CLOUDFLARE_API_TOKEN` (permission: Account ▸
    Cloudflare Pages ▸ Edit) and `CLOUDFLARE_ACCOUNT_ID`. Until both exist the
-   workflow runs, finds no secrets, and skips the deploy.
+   workflow runs, `bin/design-preview-ready.sh` finds no secrets, and the
+   deploy is skipped with a notice in the run log.
 2. Optionally name the Pages project with the reusable workflow's
    `project_name` input; it defaults to `<repo>-design` and is created on the
    first run.

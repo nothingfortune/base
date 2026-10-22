@@ -14,7 +14,9 @@ assert_contains "$SUITE/_headers" "/*" "_headers applies to every path"
 assert_contains "$SUITE/_headers" "X-Robots-Tag: noindex, nofollow" "...sending X-Robots-Tag noindex"
 assert_contains "$SUITE/robots.txt" "User-agent: *" "robots.txt addresses every crawler"
 assert_contains "$SUITE/robots.txt" "User-agent: ClaudeBot" "...and AI crawlers by name"
-assert_eq "" "$(grep -vE '^(User-agent: .+|Disallow: /|#.*|)$' "$SUITE/robots.txt")" "...and only ever disallows everything"
+# Exit 1 means grep found no other line; exit 2 (a bad pattern) must not pass as "nothing found".
+grep -vqE '^((User-agent: .+)|(Disallow: /)|(#.*))?$' "$SUITE/robots.txt"
+assert_eq "1" "$?" "...and only ever disallows everything"
 # A .dc.html source in the deployed folder once caused a redirect loop (outerReach #111).
 assert_eq "" "$(find "$SUITE" -name '*.dc.html')" "no design-tool sources in the deployed suite"
 assert_eq "1" "$([ -f "$ROOT/docs/designs/handoff/README.md" ] && echo 1 || echo 0)" "the handoff drop zone exists"

@@ -73,7 +73,9 @@ Application code lives in `src/`, split into `lib/` (reusable logic), `types/`
 in `tests/unit/` mirroring `src/` paths; `tests/e2e/` is reserved for Playwright,
 which is not installed by default. Shell scripts go in `bin/`, repo-local Node
 tooling in `scripts/`, design tokens and their preview cards in `design/`, and
-documentation in `docs/`.
+documentation in `docs/`. A design tool export goes in `docs/designs/suite/`,
+which deploys to Cloudflare Pages as a private preview, and its handoff package
+in `docs/designs/handoff/`, which never deploys.
 
 Conventions — including testing and CI rules — are documented in `CLAUDE.md`.
 
