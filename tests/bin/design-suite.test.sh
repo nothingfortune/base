@@ -25,4 +25,20 @@ assert_contains "$WF" "path: docs/designs/suite" "...and deploys that same folde
 assert_not_contains "$WF" "handoff" "...never the handoff package"
 assert_contains "$WF" "github.actor != 'dependabot[bot]'" "Dependabot pushes, which carry no secrets, are skipped"
 assert_contains "$WF" "needs.configured.outputs.ready == 'true'" "the deploy waits until the Cloudflare secrets are set"
+assert_contains "$WF" "run: bin/design-preview-ready.sh" "...as decided by bin/design-preview-ready.sh"
+
+echo "design-preview-ready.sh:"
+OUT="$(mktemp "${TMPDIR:-/tmp}/ready.XXXXXX")" || exit 1
+ready() { # <token> <account> — prints what the script wrote to GITHUB_OUTPUT
+  : >"$OUT"
+  GITHUB_OUTPUT="$OUT" CLOUDFLARE_API_TOKEN="$1" CLOUDFLARE_ACCOUNT_ID="$2" bash "$ROOT/bin/design-preview-ready.sh" >/dev/null
+  cat "$OUT"
+}
+assert_eq "ready=true" "$(ready tok acct)" "both secrets set: ready"
+assert_eq "" "$(ready '' acct)" "no API token: not ready"
+assert_eq "" "$(ready tok '')" "no account id: not ready"
+assert_eq "" "$(ready '' '')" "neither: not ready"
+said="$(GITHUB_OUTPUT="$OUT" CLOUDFLARE_API_TOKEN='' CLOUDFLARE_ACCOUNT_ID=acct bash "$ROOT/bin/design-preview-ready.sh" 2>&1)"
+assert_eq "::notice::Cloudflare secrets not set; skipping the design preview deploy." "$said" "...and says why in the run log"
+rm -f "$OUT"
 test_summary
