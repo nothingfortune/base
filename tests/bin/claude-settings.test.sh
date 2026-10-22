@@ -17,6 +17,12 @@ GUARDED='Bash|PowerShell|Read|Edit|Write|NotebookEdit|Grep|Glob'
 assert_eq '"node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-tools.mjs\""' \
   "$(q ".hooks?.PreToolUse?.find(h => h.matcher === '$GUARDED')?.hooks?.[0]?.command")" "shell and file tools pass through guard-tools.mjs"
 assert_eq 'false' "$(node -e 'process.stdout.write(String(require("fs").existsSync(process.argv[1])))' "$ROOT/.claude/hooks/guard-bash.mjs")" "the old guard-bash.mjs is gone"
+# Every session in a clone gets the engineering-lessons skill without a manual /plugin install.
+assert_eq '"hestiamediagroup/engineering-lessons"' \
+  "$(q '.extraKnownMarketplaces?.["hestia-engineering"]?.source?.repo')" "the hestia-engineering marketplace is known"
+assert_eq '"github"' \
+  "$(q '.extraKnownMarketplaces?.["hestia-engineering"]?.source?.source')" "the marketplace comes from GitHub"
+assert_eq 'true' "$(q '.enabledPlugins?.["engineering-lessons@hestia-engineering"]')" "engineering-lessons is enabled"
 # Claude Code never consults Write(path) rules; Edit(...) already covers the Write tool.
 assert_eq 'false' "$(q '.permissions?.deny?.some(r => r.startsWith("Write("))')" "no dead Write(...) rules"
 # macOS mktemp ignores $TMPDIR without a template, and the sandbox only allows writes under $TMPDIR.

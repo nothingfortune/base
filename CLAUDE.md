@@ -129,6 +129,10 @@ accompany bug fixes; mark incomplete implementations.
   `.claude/` settings and hooks: deny rules in `.claude/settings.json`, plus
   `.claude/hooks/guard-tools.mjs` for shell commands and paths outside the
   session folder. Ask the user instead.
+- `.claude/settings.json` enables the `engineering-lessons` plugin
+  (`hestiamediagroup/engineering-lessons`, private). When planning, reviewing
+  code, designing tests or orchestrating subagents, use its `lessons` skill and
+  cite lesson ids ("per L-0023").
 
 ## CI
 

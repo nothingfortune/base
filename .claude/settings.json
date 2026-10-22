@@ -22,5 +22,16 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "hestia-engineering": {
+      "source": {
+        "source": "github",
+        "repo": "hestiamediagroup/engineering-lessons"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "engineering-lessons@hestia-engineering": true
   }
 }
