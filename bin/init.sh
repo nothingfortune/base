@@ -89,7 +89,9 @@ awk '/template base repo/ { skipblank = 1; next } skipblank && /^$/ { skipblank 
   CLAUDE.md >CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
 echo "  CLAUDE.md: template banner removed"
 
-find docs/toDo docs/designs -name '*.md' -type f -print -delete 2>/dev/null | sed 's/^/  removed /'
+# Only dated designs at the top level go; the suite and handoff READMEs describe the project's own folders.
+find docs/toDo -name '*.md' -type f -print -delete 2>/dev/null | sed 's/^/  removed /'
+find docs/designs -maxdepth 1 -name '*.md' -type f -print -delete 2>/dev/null | sed 's/^/  removed /'
 
 rc=0
 if ! residue; then rc=1; fi

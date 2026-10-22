@@ -87,17 +87,14 @@ Code session in the repo and run `/design-sync`.
   moves into Claude. The tokens and CSS do not depend on it, and the marker is
   one HTML comment.
 
-## Deploying the previews (opt-in)
+## The Cloudflare preview
 
-Nothing deploys the cards by default. To publish them to Cloudflare Pages
-with `.github/workflows/deploy-design-preview.yml`:
-
-1. Set the reusable workflow's `path` input to `design`, so the cards serve
-   at `/previews/*.html` and their `../tokens.css` link resolves. The shared
-   workflow has no build step; it deploys the folder as committed.
-2. Change the trigger `paths` to `design/**`.
-3. Add the repository secrets `CLOUDFLARE_API_TOKEN` and
-   `CLOUDFLARE_ACCOUNT_ID`.
+The cards are not deployed: the Design System pane reads them through the
+sync above. The Cloudflare preview publishes the design tool's exported pages
+from `docs/designs/suite/`, and the handoff package goes in
+`docs/designs/handoff/`; each folder's README says what belongs there and how
+to turn the deploy on. When a handoff changes a token, update
+`design/tokens.json` and run `npm run tokens`.
 
 ## Opting out
 

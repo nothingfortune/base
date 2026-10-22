@@ -1,0 +1,5 @@
+# Cloudflare Pages custom headers.
+# X-Robots-Tag rides on EVERY response (HTML, images, assets), and more crawlers
+# honor it than an in-page <meta robots>, since it needs no HTML parsing.
+/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai

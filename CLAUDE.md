@@ -45,7 +45,7 @@ What each gate enforces, and how to move its ratchet, is in
 | `bin/`           | Shell scripts (build helpers, AI PR-review loop).                                     |
 | `tests/bin/`     | Bash tests for `bin/` scripts, run by `tests/bin/run.sh`.                             |
 | `scripts/`       | Repo-local Node/TS tooling.                                                           |
-| `docs/designs/`  | Design docs, named `YYYY-MM-DD-topic-design.md`.                                      |
+| `docs/designs/`  | Design docs (`YYYY-MM-DD-topic-design.md`); `suite/` is deployed, `handoff/` is not.  |
 | `design/`        | DTCG design tokens, generated CSS and preview cards (`docs/guides/design-tokens.md`). |
 | `docs/guides/`   | How-to documentation.                                                                 |
 | `docs/toDo/`     | Active plans. Move to `docs/toDo/completed/` when finished.                           |
@@ -150,10 +150,13 @@ accompany bug fixes; mark incomplete implementations.
 - Every workflow carries a stated reason:
   - `ci.yml` — the gate: `npm ci` + `npm run check`, every PR + main push.
   - `e2e.yml` — the expensive layer (above), draft-skipped, self-activating.
-  - `deploy-design-preview.yml` — publishes `docs/designs/handoff/` to
-    Cloudflare Pages (main → production, branches → previews). Dormant until
-    that path exists; per-project setup is documented in the file (rename
-    the Pages project, add `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`).
+  - `deploy-design-preview.yml` — publishes `docs/designs/suite/` (the
+    design tool's exported pages) to Cloudflare Pages when it changes (main →
+    production, branches → previews), with `_headers` and `robots.txt`
+    keeping it out of search and AI crawlers. Skips until
+    `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` are set; setup in
+    `docs/designs/suite/README.md`. The handoff package goes in
+    `docs/designs/handoff/` and is never deployed.
   - `mutation.yml` — manual Stryker run (`npm run test:mutation`).
     Informational: never on PRs, never required; fails only when Stryker
     kills nothing, which means the runner broke.
