@@ -36,7 +36,9 @@ npm run check
    while dormant: `bin/setup-github.sh` requires its `e2e / e2e` check. If you
    delete it, run setup with `SETUP_REQUIRED_CHECKS=gate`. No UI? Remove the
    design tokens with the list in
-   [design tokens](docs/guides/design-tokens.md#opting-out).
+   [design tokens](docs/guides/design-tokens.md#opting-out). Without access to
+   the private `hestiamediagroup/engineering-lessons` repo, remove
+   `extraKnownMarketplaces` and `enabledPlugins` from `.claude/settings.json`.
 
 `bin/setup-github.sh` stays and is safe to re-run whenever settings drift.
 

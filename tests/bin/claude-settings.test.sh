@@ -17,6 +17,29 @@ GUARDED='Bash|PowerShell|Read|Edit|Write|NotebookEdit|Grep|Glob'
 assert_eq '"node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-tools.mjs\""' \
   "$(q ".hooks?.PreToolUse?.find(h => h.matcher === '$GUARDED')?.hooks?.[0]?.command")" "shell and file tools pass through guard-tools.mjs"
 assert_eq 'false' "$(node -e 'process.stdout.write(String(require("fs").existsSync(process.argv[1])))' "$ROOT/.claude/hooks/guard-bash.mjs")" "the old guard-bash.mjs is gone"
+# The engineering-lessons plugin is all or nothing: README lets clones without repo access drop both keys.
+plugin_errors() {
+  node -e '
+    const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    const m = s.extraKnownMarketplaces?.["hestia-engineering"];
+    const on = s.enabledPlugins?.["engineering-lessons@hestia-engineering"];
+    if (m === undefined && on === undefined) process.exit(0);
+    const errs = [];
+    if (m?.source?.source !== "github" || m?.source?.repo !== "hestiamediagroup/engineering-lessons") errs.push("marketplace");
+    if (on !== true) errs.push("enabled");
+    process.stdout.write(errs.join(","));
+  ' "$1"
+}
+assert_eq '' "$(plugin_errors "$ROOT/.claude/settings.json")" "the shipped plugin config is complete"
+fixture="$(mktemp "${TMPDIR:-/tmp}/settings.XXXXXX")" || exit 1
+MP='"extraKnownMarketplaces":{"hestia-engineering":{"source":{"source":"github","repo":"hestiamediagroup/engineering-lessons"}}}'
+echo '{"permissions":{}}' > "$fixture"
+assert_eq '' "$(plugin_errors "$fixture")" "dropping both plugin keys (the README opt-out) passes"
+echo "{$MP}" > "$fixture"
+assert_eq 'enabled' "$(plugin_errors "$fixture")" "a marketplace without the enabled plugin fails"
+echo "{${MP/engineering-lessons\"/other\"},\"enabledPlugins\":{\"engineering-lessons@hestia-engineering\":true}}" > "$fixture"
+assert_eq 'marketplace' "$(plugin_errors "$fixture")" "a marketplace pointing at another repo fails"
+rm -f "$fixture"
 # Claude Code never consults Write(path) rules; Edit(...) already covers the Write tool.
 assert_eq 'false' "$(q '.permissions?.deny?.some(r => r.startsWith("Write("))')" "no dead Write(...) rules"
 # macOS mktemp ignores $TMPDIR without a template, and the sandbox only allows writes under $TMPDIR.
