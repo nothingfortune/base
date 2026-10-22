@@ -51,7 +51,8 @@ const PLANTED = {
     '[escape](../outside.md)',
     '[fragment](docs/guides/real.md#section) [frag-broken](docs/nope.md#section)',
   ].join('\n'),
-  'docs/guides/living.md': 'See `docs/guides/gone.md` and [up](../../README.md).\n',
+  'docs/guides/living.md':
+    'See `docs/guides/gone.md` and [up](../../README.md).\nThe package is `docs/designs/handoff/gone.md`.\n',
   'docs/toDo/plan.md':
     'A record mentions `bin/retired.sh`; its [link](gone.md) still must resolve.\n',
 };
@@ -78,6 +79,10 @@ describe('check-docs on planted defects', () => {
     ['a link escaping the repo', 'README.md:10 broken link → ../outside.md'],
     ['a broken link with a fragment', 'README.md:11 broken link → docs/nope.md'],
     ['a missing path in docs/guides', 'docs/guides/living.md:1 missing path → docs/guides/gone.md'],
+    [
+      'a missing handoff path, which is no longer exempt',
+      'docs/guides/living.md:2 missing path → docs/designs/handoff/gone.md',
+    ],
     ['a broken link in a dated record', 'docs/toDo/plan.md:1 broken link → gone.md'],
   ])('reports %s', (_name, line) => {
     expect(result.output).toContain(line);
@@ -85,7 +90,7 @@ describe('check-docs on planted defects', () => {
 
   it('reports nothing else: controls, code, records and untracked files stay quiet', () => {
     const reported = result.output.split('\n').filter((l) => l.includes(' → '));
-    expect(reported).toHaveLength(6);
+    expect(reported).toHaveLength(7);
   });
 });
 
