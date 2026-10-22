@@ -205,6 +205,9 @@ describe('file tools and .claude/ settings and hooks outside the session folder'
     ['Write', { file_path: '/elsewhere/.claude/settings.local.json' }],
     ['Edit', { file_path: '/elsewhere/.claude/settings.json' }],
     ['Write', { file_path: 'C:\\elsewhere\\.claude\\settings.json' }],
+    ['Edit', { file_path: '/elsewhere/.claude/hooks/../settings.json' }],
+    ['Write', { file_path: '/elsewhere/.claude/./settings.local.json' }],
+    ['Edit', { file_path: '/elsewhere/.claude//hooks/guard-tools.mjs' }],
   ])('blocks %s %j', (tool_name, tool_input) => {
     expect(hook({ tool_name, tool_input }, CONFIG_BLOCK)).toEqual({ status: 2, said: true });
   });
@@ -218,6 +221,13 @@ describe('file tools and .claude/ settings and hooks outside the session folder'
 });
 
 describe('brace expansion is checked by expanding it', () => {
+  it.each(['cat .{{x},e}nv', 'cat .{e,{x}}nv'])(
+    'blocks the outer group around a literal one %j',
+    (command) => {
+      expect(bash(command, ENV_BLOCK)).toEqual({ status: 2, said: true });
+    },
+  );
+
   it.each([
     "gh api repos/o/r/pulls/1 --jq '{state:.state,sha:.head.sha}'",
     "jq '{a:.e,b:.c}' f.json",

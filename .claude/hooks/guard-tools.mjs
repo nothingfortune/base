@@ -2,6 +2,7 @@
 // PreToolUse hook: keeps agents out of .env files (except *.example) and stops shell changes to .claude/ settings and hooks.
 // Shell checks read command text, so they stop accidents, not a determined bypass: https://code.claude.com/docs/en/permissions
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 const SHELLS = new Set(['Bash', 'PowerShell']);
 const ENV_NAME = /(?<![\w$-])\.env[\w.-]*/g;
@@ -55,10 +56,13 @@ function expandBraces(word) {
   const queue = [word];
   while (queue.length > 0) {
     const w = queue.pop();
-    const group = [...w.matchAll(/\{([^{}]*)\}/g)]
-      .map((m) => ({ m, alts: alternatives(m[1]) }))
-      .find((g) => g.alts !== undefined);
-    if (group === undefined) words.push(w);
+    const groups = [...w.matchAll(/\{([^{}]*)\}/g)].map((m) => ({ m, alts: alternatives(m[1]) }));
+    const group = groups.find((g) => g.alts !== undefined);
+    // A literal inner group like {x} is masked so the group around it can still expand.
+    if (group === undefined && groups.length > 0) {
+      queue.push(w.replace(/\{([^{}]*)\}/g, '\u0001$1\u0002'));
+    } else if (group === undefined)
+      words.push(w.replaceAll('\u0001', '{').replaceAll('\u0002', '}'));
     else if (group.alts === null) return null;
     else {
       const { index } = group.m;
@@ -126,7 +130,8 @@ const CONFIG_FILE = /(?:^|\/)\.claude\/(?:settings(?:\.local)?\.json$|hooks(?:\/
 const MUTATING = new Set(['Edit', 'Write', 'NotebookEdit']);
 
 function checkFiles(input) {
-  const slashed = (v) => (typeof v === 'string' ? v.toLowerCase().replace(/\\/g, '/') : '');
+  const slashed = (v) =>
+    typeof v === 'string' ? path.posix.normalize(v.toLowerCase().replace(/\\/g, '/')) : '';
   const paths = [input.file_path, input.notebook_path, input.path].map(slashed);
   const globs = [input.glob, input.tool === 'Glob' ? input.pattern : undefined].map(slashed);
   const env = [...paths, ...globs].filter((p) => p !== '' && envLike(p));
