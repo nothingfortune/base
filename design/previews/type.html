@@ -1,0 +1,35 @@
+<!-- @dsCard group="Type" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Type</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+:root { color-scheme: light dark; }
+body { margin: 0; padding: 16px; font: 14px/1.4 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 6px 0; }
+li > :first-child { grid-column: 1 / -1; }
+.swatch { height: 40px; border-radius: 6px; border: 1px solid GrayText; }
+.bar { height: 12px; background: CanvasText; }
+.box { width: 64px; height: 64px; border: 2px solid CanvasText; }
+ul { list-style: none; margin: 0; padding: 0; }
+p { margin: 0; }
+  </style>
+</head>
+<body>
+  <h1>Type</h1>
+  <ul>
+    <li><p data-token="font.family.sans" style="font-family: var(--font-family-sans)">The quick brown fox jumps over the lazy dog</p><code>font.family.sans</code> <small>system-ui, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif</small></li>
+    <li><p data-token="font.family.mono" style="font-family: var(--font-family-mono)">The quick brown fox jumps over the lazy dog</p><code>font.family.mono</code> <small>ui-monospace, SFMono-Regular, Menlo, Consolas, monospace</small></li>
+    <li><p data-token="font.size.xs" style="font-size: var(--font-size-xs)">The quick brown fox jumps over the lazy dog</p><code>font.size.xs</code></li>
+    <li><p data-token="font.size.sm" style="font-size: var(--font-size-sm)">The quick brown fox jumps over the lazy dog</p><code>font.size.sm</code></li>
+    <li><p data-token="font.size.md" style="font-size: var(--font-size-md)">The quick brown fox jumps over the lazy dog</p><code>font.size.md</code></li>
+    <li><p data-token="font.size.lg" style="font-size: var(--font-size-lg)">The quick brown fox jumps over the lazy dog</p><code>font.size.lg</code></li>
+    <li><p data-token="font.size.xl" style="font-size: var(--font-size-xl)">The quick brown fox jumps over the lazy dog</p><code>font.size.xl</code></li>
+    <li><p data-token="font.weight.regular" style="font-weight: var(--font-weight-regular)">The quick brown fox jumps over the lazy dog</p><code>font.weight.regular</code></li>
+    <li><p data-token="font.weight.bold" style="font-weight: var(--font-weight-bold)">The quick brown fox jumps over the lazy dog</p><code>font.weight.bold</code></li>
+  </ul>
+</body>
+</html>

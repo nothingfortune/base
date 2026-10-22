@@ -1,0 +1,44 @@
+<!-- @dsCard group="Colors" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Colors</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+:root { color-scheme: light dark; }
+body { margin: 0; padding: 16px; font: 14px/1.4 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 6px 0; }
+li > :first-child { grid-column: 1 / -1; }
+.swatch { height: 40px; border-radius: 6px; border: 1px solid GrayText; }
+.bar { height: 12px; background: CanvasText; }
+.box { width: 64px; height: 64px; border: 2px solid CanvasText; }
+ul { list-style: none; margin: 0; padding: 0; }
+p { margin: 0; }
+  </style>
+</head>
+<body>
+  <h1>Colors</h1>
+  <ul>
+    <li><div class="swatch" data-token="color.neutral.0" style="background: var(--color-neutral-0)"></div><code>color.neutral.0</code></li>
+    <li><div class="swatch" data-token="color.neutral.50" style="background: var(--color-neutral-50)"></div><code>color.neutral.50</code></li>
+    <li><div class="swatch" data-token="color.neutral.100" style="background: var(--color-neutral-100)"></div><code>color.neutral.100</code></li>
+    <li><div class="swatch" data-token="color.neutral.200" style="background: var(--color-neutral-200)"></div><code>color.neutral.200</code></li>
+    <li><div class="swatch" data-token="color.neutral.300" style="background: var(--color-neutral-300)"></div><code>color.neutral.300</code></li>
+    <li><div class="swatch" data-token="color.neutral.400" style="background: var(--color-neutral-400)"></div><code>color.neutral.400</code></li>
+    <li><div class="swatch" data-token="color.neutral.500" style="background: var(--color-neutral-500)"></div><code>color.neutral.500</code></li>
+    <li><div class="swatch" data-token="color.neutral.600" style="background: var(--color-neutral-600)"></div><code>color.neutral.600</code></li>
+    <li><div class="swatch" data-token="color.neutral.700" style="background: var(--color-neutral-700)"></div><code>color.neutral.700</code></li>
+    <li><div class="swatch" data-token="color.neutral.800" style="background: var(--color-neutral-800)"></div><code>color.neutral.800</code></li>
+    <li><div class="swatch" data-token="color.neutral.900" style="background: var(--color-neutral-900)"></div><code>color.neutral.900</code></li>
+    <li><div class="swatch" data-token="color.accent.default" style="background: var(--color-accent-default)"></div><code>color.accent.default</code></li>
+    <li><div class="swatch" data-token="color.accent.fg" style="background: var(--color-accent-fg)"></div><code>color.accent.fg</code></li>
+    <li><div class="swatch" data-token="color.bg.surface" style="background: var(--color-bg-surface)"></div><code>color.bg.surface</code></li>
+    <li><div class="swatch" data-token="color.bg.raised" style="background: var(--color-bg-raised)"></div><code>color.bg.raised</code></li>
+    <li><div class="swatch" data-token="color.fg.default" style="background: var(--color-fg-default)"></div><code>color.fg.default</code></li>
+    <li><div class="swatch" data-token="color.fg.muted" style="background: var(--color-fg-muted)"></div><code>color.fg.muted</code></li>
+    <li><div class="swatch" data-token="color.border.default" style="background: var(--color-border-default)"></div><code>color.border.default</code></li>
+  </ul>
+</body>
+</html>

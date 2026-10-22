@@ -1,0 +1,29 @@
+<!-- @dsCard group="Radius" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Radius</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+:root { color-scheme: light dark; }
+body { margin: 0; padding: 16px; font: 14px/1.4 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 6px 0; }
+li > :first-child { grid-column: 1 / -1; }
+.swatch { height: 40px; border-radius: 6px; border: 1px solid GrayText; }
+.bar { height: 12px; background: CanvasText; }
+.box { width: 64px; height: 64px; border: 2px solid CanvasText; }
+ul { list-style: none; margin: 0; padding: 0; }
+p { margin: 0; }
+  </style>
+</head>
+<body>
+  <h1>Radius</h1>
+  <ul>
+    <li><div class="box" data-token="radius.sm" style="border-radius: var(--radius-sm)"></div><code>radius.sm</code></li>
+    <li><div class="box" data-token="radius.md" style="border-radius: var(--radius-md)"></div><code>radius.md</code></li>
+    <li><div class="box" data-token="radius.lg" style="border-radius: var(--radius-lg)"></div><code>radius.lg</code></li>
+  </ul>
+</body>
+</html>

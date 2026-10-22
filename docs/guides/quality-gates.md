@@ -281,6 +281,35 @@ Force-adding `probe.sql` to this repo made the suite fail naming it.
 **Origin:** `outerReach/bin/repo-hygiene.sh` gate E (#387/#389), which bans
 tracked dumps because a WordPress dump carries `wp_users`.
 
+## Design tokens
+
+**Enforces:** `npm run design:check` (`scripts/design-tokens.mjs --check`),
+the last step of `check`, fails when:
+
+- `design/tokens.json` or `design/tokens.dark.json` is not valid DTCG for
+  the supported types, an alias has no target, forms a cycle or changes
+  type, a dark override names a token `tokens.json` lacks, or two paths map
+  to one CSS property name.
+- `design/tokens.css` or a generated card in `design/previews/` is missing,
+  out of date, or stale (its group has no tokens left).
+- any `design/**/*.html` does not start with `<!-- @dsCard group="…" -->`.
+
+A repo without `design/` skips the check; a `design/` without
+`tokens.json` fails it.
+
+**Why:** generated files that nobody regenerates drift from their source,
+and a card without its marker silently drops out of the claude.ai/design
+Design System pane.
+
+**Updating:** edit the JSON and run `npm run tokens`; never hand-edit the
+generated files. The format, the CSS shape and the opt-out list are in
+[design tokens](design-tokens.md).
+
+**Proof:** `tests/unit/lib/design-tokens.test.ts`, `design-css.test.ts` and
+`design-previews.test.ts` pin the parser, the stylesheet and the cards;
+`tests/unit/scripts/design-tokens.test.ts` runs the CLI against throwaway
+trees for each failure above, plus the opt-out skip.
+
 ## Mutation testing (informational)
 
 **What:** `npm run test:mutation` runs Stryker over `src/**/*.ts`: it mutates

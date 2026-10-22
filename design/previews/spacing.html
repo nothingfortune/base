@@ -1,0 +1,32 @@
+<!-- @dsCard group="Spacing" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spacing</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+:root { color-scheme: light dark; }
+body { margin: 0; padding: 16px; font: 14px/1.4 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 6px 0; }
+li > :first-child { grid-column: 1 / -1; }
+.swatch { height: 40px; border-radius: 6px; border: 1px solid GrayText; }
+.bar { height: 12px; background: CanvasText; }
+.box { width: 64px; height: 64px; border: 2px solid CanvasText; }
+ul { list-style: none; margin: 0; padding: 0; }
+p { margin: 0; }
+  </style>
+</head>
+<body>
+  <h1>Spacing</h1>
+  <ul>
+    <li><div class="bar" data-token="space.1" style="width: var(--space-1)"></div><code>space.1</code></li>
+    <li><div class="bar" data-token="space.2" style="width: var(--space-2)"></div><code>space.2</code></li>
+    <li><div class="bar" data-token="space.3" style="width: var(--space-3)"></div><code>space.3</code></li>
+    <li><div class="bar" data-token="space.4" style="width: var(--space-4)"></div><code>space.4</code></li>
+    <li><div class="bar" data-token="space.6" style="width: var(--space-6)"></div><code>space.6</code></li>
+    <li><div class="bar" data-token="space.8" style="width: var(--space-8)"></div><code>space.8</code></li>
+  </ul>
+</body>
+</html>

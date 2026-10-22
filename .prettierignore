@@ -5,3 +5,5 @@ node_modules/
 package-lock.json
 .gitkeep
 .claude/worktrees/
+design/tokens.css
+design/previews/

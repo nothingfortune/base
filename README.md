@@ -34,7 +34,9 @@ npm run check
    `bin/` if you skip the AI review loop. Keep `scripts/` and
    `bin/comment-density.sh`: `npm run check` runs them. Keep `e2e.yml` even
    while dormant: `bin/setup-github.sh` requires its `e2e / e2e` check. If you
-   delete it, run setup with `SETUP_REQUIRED_CHECKS=gate`.
+   delete it, run setup with `SETUP_REQUIRED_CHECKS=gate`. No UI? Remove the
+   design tokens with the list in
+   [design tokens](docs/guides/design-tokens.md#opting-out).
 
 `bin/setup-github.sh` stays and is safe to re-run whenever settings drift.
 
@@ -57,6 +59,8 @@ npm run check
 | `npm run test:bin`        | Bash tests for `bin/` scripts and repo guards                  |
 | `npm run test:mutation`   | Stryker mutation testing (informational)                       |
 | `npm run docs:check`      | Markdown links and living-doc paths resolve                    |
+| `npm run tokens`          | Regenerate design-token CSS and preview cards                  |
+| `npm run design:check`    | Design tokens valid and generated files current                |
 
 The gates are explained in [quality gates](docs/guides/quality-gates.md).
 
@@ -66,7 +70,8 @@ Application code lives in `src/`, split into `lib/` (reusable logic), `types/`
 (shared types), and `config/` (configuration and environment). Unit tests live
 in `tests/unit/` mirroring `src/` paths; `tests/e2e/` is reserved for Playwright,
 which is not installed by default. Shell scripts go in `bin/`, repo-local Node
-tooling in `scripts/`, and documentation in `docs/`.
+tooling in `scripts/`, design tokens and their preview cards in `design/`, and
+documentation in `docs/`.
 
 Conventions — including testing and CI rules — are documented in `CLAUDE.md`.
 
