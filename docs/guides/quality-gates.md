@@ -175,8 +175,7 @@ mechanism rather than a reminder.
 
 Fenced code blocks are skipped for both checks, and inline code is not
 scanned for links. Spans with placeholders (`<name>`, `*`, `{}`, `...`) are
-not paths. Generated paths (`node_modules`, `dist`, `build`, `coverage`) and
-`docs/designs/handoff/`, which `deploy-design-preview.yml` waits for, are
+not paths. Generated paths (`node_modules`, `dist`, `build`, `coverage`) are
 absent by design and always pass.
 
 **Why:** a renamed or moved file leaves dangling references, and nothing else

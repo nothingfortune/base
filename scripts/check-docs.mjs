@@ -11,8 +11,8 @@ const CODE_SPAN = /`([^`\s]+)`/g;
 const REPO_ROOTS = /^(?:src|tests|bin|scripts|docs|\.github|\.githooks|\.vscode)\//;
 const PATH_SHAPE = /^[\w./@-]+\/?$/;
 const PLACEHOLDER = /[<>{}*…$%]|\.\.\./;
-// Generated or gitignored paths a fresh checkout lacks, and dirs a workflow waits for.
-const ABSENT_BY_DESIGN = /^(?:node_modules|dist|build|coverage|docs\/designs\/handoff)(?:\/|$)/;
+// Generated or gitignored paths a fresh checkout lacks.
+const ABSENT_BY_DESIGN = /^(?:node_modules|dist|build|coverage)(?:\/|$)/;
 // Dated plans and designs are records of their time; their prose paths may age.
 const LIVING = /^(?:README\.md|CLAUDE\.md|AGENTS\.md|docs\/guides\/.+\.md)$/;
 
