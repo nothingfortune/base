@@ -53,11 +53,13 @@ assert_eq "0" "$code" "a review of an earlier commit times out cleanly"
 assert_contains "$STUB_DIR/out" "No completed Codex review" "...and says the head is not reviewed yet"
 assert_not_contains "$STUB_DIR/out" "stale finding" "...and does not pass off the earlier review's findings"
 
-stub issue_comments "$STATE_HEAD1"; stub pull_comments "[$OLD_FINDING,$HEAD_FINDING]"
+HEAD_REPLY='{"id":3,"in_reply_to_id":2,"user":{"login":"chatgpt-codex-connector[bot]"},"path":"b.ts","line":2,"original_commit_id":"HEAD1","body":"codex thread reply"}'
+stub issue_comments "$STATE_HEAD1"; stub pull_comments "[$OLD_FINDING,$HEAD_FINDING,$HEAD_REPLY]"
 code="$(run "$BIN/await-codex-review.sh" 42)"
 assert_eq "0" "$code" "a completed review of the head returns"
 assert_contains "$STUB_DIR/out" "fresh finding" "...and prints the head's findings"
 assert_not_contains "$STUB_DIR/out" "stale finding" "...and not an earlier commit's"
+assert_not_contains "$STUB_DIR/out" "codex thread reply" "...and not Codex's in-thread replies, which are not findings"
 
 stub pull_comments "[$OLD_FINDING]"
 code="$(run "$BIN/await-codex-review.sh" 42)"
@@ -82,6 +84,16 @@ assert_contains "$STUB_DIR/out" "No completed Codex review" "...and says the hea
 assert_not_contains "$STUB_DIR/out" "fresh finding" "...and does not treat the review as done"
 stub issue_comments "$STATE_HEAD1"
 
+# Suppressed findings are filtered to the head review: the current one prints, an earlier head's does not.
+SUPP() { printf '{"user":{"login":"chatgpt-codex-connector[bot]"},"commit_id":"%s","body":"<details>\\n<summary>Suppressed comments (1)</summary>\\n\\n**%s:1**\\n* %s\\n</details>"}' "$1" "$2" "$3"; }
+stub pull_comments "[$OLD_FINDING]"; stub reviews "[$(SUPP OLD e.ts 'stale suppressed'),$(SUPP HEAD1 f.ts 'fresh suppressed')]"
+code="$(run "$BIN/await-codex-review.sh" 42)"
+assert_eq "0" "$code" "a completed review with suppressed findings returns"
+assert_contains "$STUB_DIR/out" "fresh suppressed" "...and prints the head review's suppressed finding"
+assert_not_contains "$STUB_DIR/out" "stale suppressed" "...and not an earlier head's"
+assert_not_contains "$STUB_DIR/out" "filed no findings" "...and does not report the review as clean"
+stub reviews '[]'
+
 # Suppressed findings live only in review bodies, so a failed reviews fetch must not read as clean either.
 stub pull_comments "[$OLD_FINDING]"; stub reviews FAIL
 code="$(run "$BIN/await-codex-review.sh" 42)"
@@ -91,10 +103,10 @@ assert_not_contains "$STUB_DIR/out" "filed no findings" "...and does not report 
 echo "await-copilot-review:"
 
 stub reviews '[{"id":7,"user":{"login":"copilot-pull-request-reviewer[bot]"},"commit_id":"HEAD1","body":"summary"}]'
-stub pull_comments '[{"id":3,"in_reply_to_id":null,"pull_request_review_id":7,"user":{"login":"Copilot"},"path":"d.ts","line":4,"body":"copilot finding"}]'
+stub pull_comments '[{"id":8,"in_reply_to_id":null,"pull_request_review_id":7,"user":null,"body":"ghost"},{"id":3,"in_reply_to_id":null,"pull_request_review_id":7,"user":{"login":"Copilot"},"path":"d.ts","line":4,"body":"copilot finding"}]'
 code="$(run "$BIN/await-copilot-review.sh" 42)"
 assert_eq "0" "$code" "a Copilot review of the head returns"
-assert_contains "$STUB_DIR/out" "copilot finding" "...and prints its inline finding"
+assert_contains "$STUB_DIR/out" "copilot finding" "...and prints its inline finding, even beside a deleted author's comment"
 
 stub pull_comments FAIL
 code="$(run "$BIN/await-copilot-review.sh" 42)"

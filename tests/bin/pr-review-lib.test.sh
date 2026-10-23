@@ -189,6 +189,8 @@ state_comment() { # <sha> <status>
 assert_eq "completed" "$(printf '[%s]' "$(state_comment HEAD1 completed)" | codex_review_state HEAD1)" "completed review of the head → completed"
 assert_eq "pending" "$(printf '[%s]' "$(state_comment OLD completed)" | codex_review_state HEAD1)" "completed review of an earlier commit → pending"
 assert_eq "pending" "$(printf '[%s]' "$(state_comment HEAD1 in_progress)" | codex_review_state HEAD1)" "review of the head still running → pending"
+assert_eq "completed" "$(printf '[%s,%s]' "$(state_comment OLD completed)" "$(state_comment HEAD1 completed)" | codex_review_state HEAD1)" "the newest marker wins over an older one"
+assert_eq "pending" "$(printf '[%s,%s]' "$(state_comment HEAD1 completed)" "$(state_comment HEAD1 running)" | codex_review_state HEAD1)" "a newer running marker supersedes an older completed one"
 assert_eq "pending" "$(printf '[{"user":null,"body":"hi"}]' | codex_review_state HEAD1)" "no marker (and a user:null comment) → pending"
 assert_eq "pending" "$(printf '[{"user":{"login":"somehuman"},"body":"<!-- codex-review-state:v1 {\\"code_review\\":{\\"commit_sha\\":\\"HEAD1\\",\\"status\\":\\"completed\\"}} -->"}]' | codex_review_state HEAD1)" "a marker pasted by a human is ignored"
 
