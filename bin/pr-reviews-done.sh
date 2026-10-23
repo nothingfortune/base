@@ -132,7 +132,12 @@ LESSONS_REPO="${LESSONS_REPO:-hestiamediagroup/engineering-lessons}"
 LESSONS_PATH="plugins/engineering-lessons/skills/lessons/lessons"
 lesson_links=""
 if [ -n "$LESSONS" ]; then
-  cited="$(printf '%s' "$LESSONS" | grep -oE 'L-[0-9]{4}' | sort -u || true)"
+  cited="$(printf '%s' "$LESSONS" | grep -oE 'L-[0-9]+' | sort -u || true)"
+  malformed="$(printf '%s\n' "$cited" | grep -vE '^(L-[0-9]{4})?$' || true)"
+  if [ -n "$malformed" ]; then
+    echo "Refusing to post: malformed lesson id(s): $(printf '%s' "$malformed" | tr '\n' ' ')- ids are exactly L- plus four digits." >&2
+    exit 3
+  fi
   if [ -z "$cited" ]; then
     if ! printf '%s' "$LESSONS" | grep -qiE 'none new: *[^ ]'; then
       echo "Refusing to post: the takeaway cites no lesson id and is not 'none new: <why>'." >&2

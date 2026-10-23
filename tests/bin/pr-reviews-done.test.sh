@@ -96,6 +96,12 @@ assert_eq "3" "$code" "an id missing from lessons main refuses"
 assert_contains "$STUB_DIR/out" "L-0999" "...and names the missing id"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
+# 6c2. An id with extra digits must not verify as its four-digit prefix (Codex, #37).
+code="$(run_gate 42 --lessons "L-00820: a nonexistent lesson")"
+assert_eq "3" "$code" "an over-long id refuses instead of matching L-0082"
+assert_contains "$STUB_DIR/out" "L-00820" "...and names the malformed id"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+
 # 6d. A failed lessons lookup is unverified, not fine.
 code="$(LESSONS_LIST=fail run_gate 42 --lessons "L-0082: a class")"
 assert_eq "3" "$code" "a failed lessons lookup refuses (fail closed)"
