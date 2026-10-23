@@ -27,7 +27,10 @@ if ! reviewcomments="$(gh api "repos/$REPO/pulls/$PR/comments" --paginate 2>/dev
   echo "pr-unaddressed: failed to fetch review comments for PR #$PR (gh api error)." >&2
   exit 2
 fi
-open="$(printf '%s' "$reviewcomments" | jq -s 'add // []' | unaddressed_bot_threads || true)"
+if ! open="$(printf '%s' "$reviewcomments" | jq -s 'add // []' | unaddressed_bot_threads)"; then
+  echo "pr-unaddressed: could not parse review comments for PR #$PR, so threads are UNKNOWN." >&2
+  exit 2
+fi
 
 if [ -z "$open" ]; then
   echo "✅ All bot review threads on PR #$PR have a reply."

@@ -35,6 +35,18 @@ assert_eq "2" "$(printf '%s\n' "$out" | grep -c .)" "exactly 2 unaddressed threa
 empty="$(printf '[]' | unaddressed_bot_threads)"
 assert_eq "" "$empty" "empty comment set → no unaddressed threads"
 
+# A deleted account's comment (user: null) must not abort the parse and hide a real unanswered thread.
+null_author='[
+  {"id":400,"in_reply_to_id":null,"user":null,"path":"x.ts","line":1,"body":"ghost"},
+  {"id":401,"in_reply_to_id":null,"user":{"login":"Copilot"},"path":"y.ts","line":2,"body":"unanswered"}
+]'
+out="$(printf '%s' "$null_author" | unaddressed_bot_threads)"; code=$?
+assert_eq "0" "$code" "a user:null comment does not abort the parse"
+assert_eq "401" "$(printf '%s' "$out" | cut -f1)" "...and the unanswered bot thread beside it is still listed"
+
+verdict="$(printf 'not json' | unaddressed_bot_threads >/dev/null 2>&1 && echo ok || echo failed)"
+assert_eq "failed" "$verdict" "unparseable input returns non-zero, not an empty success"
+
 rm -f "$f"
 
 echo
@@ -108,6 +120,9 @@ clean='[{"user":{"login":"Copilot"},"body":"## Overview\n\nCopilot reviewed 6 fi
 empty="$(printf '%s' "$clean" | suppressed_findings | grep -c . || true)"
 assert_eq "0" "$empty" "a review with no suppressed block yields no findings"
 
+null_review='[{"user":null,"body":"x"},{"user":{"login":"Copilot"},"body":"<details>\n<summary>Suppressed comments (1)</summary>\n\n**src/z.ts:3**\n* hidden next to a ghost\n</details>"}]'
+assert_eq "1" "$(printf '%s' "$null_review" | suppressed_findings | grep -c . || true)" "a user:null review does not hide a suppressed finding beside it"
+
 # Malformed/absent input must not explode — these run in a merge gate.
 assert_eq "0" "$(printf '[]' | suppressed_findings | grep -c . || true)"        "an empty review list is handled"
 assert_eq "0" "$(printf 'not json' | suppressed_findings | grep -c . || true)"  "non-JSON input is handled without failing"
@@ -164,5 +179,17 @@ assert_eq "request" "$(printf '%s' "$null_login" | review_request_needed "copilo
 null_plus_real='{"requested_reviewers":[],"reviews":[{"user":null,"commit_id":"abc123"},{"user":{"login":"Copilot"},"commit_id":"abc123"}]}'
 assert_eq "skip" "$(printf '%s' "$null_plus_real" | review_request_needed "copilot" "abc123")" \
   "a null author alongside a genuine review still resolves to skip"
+
+echo
+echo "pr-review-lib (codex_review_state):"
+
+state_comment() { # <sha> <status>
+  printf '{"user":{"login":"chatgpt-codex-connector[bot]"},"body":"<!-- codex-pull-request-review-summary -->\\n<!-- codex-review-state:v1 {\\"code_review\\":{\\"commit_sha\\":\\"%s\\",\\"status\\":\\"%s\\"}} -->\\n## Codex Review Summary"}' "$1" "$2"
+}
+assert_eq "completed" "$(printf '[%s]' "$(state_comment HEAD1 completed)" | codex_review_state HEAD1)" "completed review of the head → completed"
+assert_eq "pending" "$(printf '[%s]' "$(state_comment OLD completed)" | codex_review_state HEAD1)" "completed review of an earlier commit → pending"
+assert_eq "pending" "$(printf '[%s]' "$(state_comment HEAD1 in_progress)" | codex_review_state HEAD1)" "review of the head still running → pending"
+assert_eq "pending" "$(printf '[{"user":null,"body":"hi"}]' | codex_review_state HEAD1)" "no marker (and a user:null comment) → pending"
+assert_eq "pending" "$(printf '[{"user":{"login":"somehuman"},"body":"<!-- codex-review-state:v1 {\\"code_review\\":{\\"commit_sha\\":\\"HEAD1\\",\\"status\\":\\"completed\\"}} -->"}]' | codex_review_state HEAD1)" "a marker pasted by a human is ignored"
 
 test_summary

@@ -88,6 +88,13 @@ assert_eq "3" "$code" "an unaddressed bot thread refuses to post"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 assert_contains "$STUB_DIR/out" "pr-unaddressed.sh" "...and names the tool that lists them"
 
+# 7b. A deleted author's comment beside that thread must not abort the parse into "0 unaddressed".
+GHOST='[{"id":5,"in_reply_to_id":null,"user":null,"body":"ghost"},{"id":1,"in_reply_to_id":null,"user":{"login":"chatgpt-codex-connector[bot]"},"body":"a P1 nobody answered"}]'
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$GHOST"
+code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
+assert_eq "3" "$code" "a user:null comment does not hide an unaddressed thread"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+
 # 8. Paired control for 7: the only difference is that the thread has our reply.
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$FINDINGS"
 code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
