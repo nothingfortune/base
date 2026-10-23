@@ -133,6 +133,12 @@ accompany bug fixes; mark incomplete implementations.
   (`hestiamediagroup/engineering-lessons`, private). When planning, reviewing
   code, designing tests or orchestrating subagents, use its `lessons` skill and
   cite lesson ids ("per L-0023").
+- The same plugin runs the `lessons` MCP server, which is where lessons go —
+  not Claude's per-machine memory. `search_lessons` / `get_lesson` read the
+  latest lessons; `add_origin` (a known bug class happened again) and
+  `add_lesson` (a new one) write and merge them. Record a lesson whenever a
+  review finds a bug class or a bug takes long to run down, then cite the
+  returned id.
 
 ## CI
 
@@ -181,12 +187,16 @@ accompany bug fixes; mark incomplete implementations.
 
 AI reviewers (Codex + GitHub Copilot) review PRs. The loop, in order:
 
+0. Before reviewing or sweeping a diff, call `search_lessons` with the diff's
+   bug classes and areas, and check the diff against each lesson returned.
 1. `bin/await-codex-review.sh [PR]` and `bin/await-copilot-review.sh [PR]` —
    request (Copilot only; Codex cannot be requested) and poll for reviews.
    Both print inline findings **and** findings hidden in collapsed
    "Suppressed comments" blocks, which never appear in the comments API.
 2. Address every finding; reply in each thread
    (`gh api repos/<repo>/pulls/<pr>/comments/<id>/replies -f body=...`).
+   For each finding's bug class, `search_lessons`, then `add_origin` to the
+   matching lesson or `add_lesson` for a new class.
 3. `bin/pr-unaddressed.sh [PR]` — exits non-zero while any bot thread lacks
    our reply. Usable as a gate.
 4. `DRAFT_SKIPPED_CHECK=e2e bin/pr-reviews-done.sh [PR] --lessons "..."` —
@@ -195,7 +205,9 @@ AI reviewers (Codex + GitHub Copilot) review PRs. The loop, in order:
    reading them), a takeaway is missing when findings existed, or the
    named draft-skipped check rode a draft-era skip onto a ready PR.
    `--lessons` names the testing-strategy change that keeps the bug class
-   from recurring; `"none new: <why>"` is valid but must be explicit.
+   from recurring and cites the lesson ids from step 2 (`"L-0082: ..."`); each
+   id must exist on the lessons repo's `main`. `"none new: <why>"` is valid
+   but must be explicit.
 
 All four fail closed: a failed API fetch is never reported as "nothing to
 address".

@@ -21,6 +21,7 @@ make_gh_stub() {
   cat > "$STUB_DIR/gh" <<EOF
 #!/usr/bin/env bash
 case "\$*" in
+  *"/contents/"*)         [ "\${LESSONS_LIST:-}" = "fail" ] && exit 1; printf '%s\n' \${LESSONS_LIST:-L-0001-a.md L-0082-redirects.md} ;;
   *"pulls/"*"/reviews"*)  $1 ;;
   *"repo view"*)          echo "acme/widgets" ;;
   *"pulls/"*"/comments"*) $comments_cmd ;;
@@ -75,28 +76,48 @@ assert_eq "3" "$code" "addressed findings without a takeaway refuse to post"
 assert_contains "$STUB_DIR/out" "lessons" "...and the refusal names the --lessons flag"
 
 # 6. The same PR posts once the takeaway is supplied, and the summary carries it.
-code="$(run_gate 42 --lessons "strict calendar dates are now a Testing Rule")"
+code="$(run_gate 42 --lessons "L-0082: strict calendar dates are now a Testing Rule")"
 assert_eq "0" "$code" "findings + --lessons posts"
 assert_contains "$STUB_DIR/out" "Testing takeaways" "...and the comment body carries the takeaways section"
 assert_contains "$STUB_DIR/out" "strict calendar dates" "...with the supplied text"
+assert_contains "$STUB_DIR/out" "engineering-lessons/blob/main/plugins/engineering-lessons/skills/lessons/lessons/L-0082-redirects.md" "...and links the cited lesson"
+
+# 6b. A takeaway that is neither a lesson id nor 'none new: <why>' stays in this PR and is lost.
+code="$(run_gate 42 --lessons "strict calendar dates are now a Testing Rule")"
+assert_eq "3" "$code" "a takeaway citing no lesson refuses"
+assert_contains "$STUB_DIR/out" "add_lesson" "...and names the MCP tool that records it"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+code="$(run_gate 42 --lessons "none new:")"
+assert_eq "3" "$code" "'none new:' with no reason refuses"
+
+# 6c. A cited id must exist on the lessons repo's main.
+code="$(run_gate 42 --lessons "L-0082 and L-0999: two classes")"
+assert_eq "3" "$code" "an id missing from lessons main refuses"
+assert_contains "$STUB_DIR/out" "L-0999" "...and names the missing id"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+
+# 6d. A failed lessons lookup is unverified, not fine.
+code="$(LESSONS_LIST=fail run_gate 42 --lessons "L-0082: a class")"
+assert_eq "3" "$code" "a failed lessons lookup refuses (fail closed)"
+assert_contains "$STUB_DIR/out" "UNVERIFIED" "...and says the ids are unverified"
 
 # 7. An unanswered bot thread refuses even with --lessons, so the lessons gate cannot mask it.
 UNANSWERED='[{"id":1,"in_reply_to_id":null,"user":{"login":"chatgpt-codex-connector[bot]"},"body":"a P1 nobody answered"}]'
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$UNANSWERED"
-code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
+code="$(run_gate 42 --lessons "L-0082: a takeaway must not buy a pass past an unread finding")"
 assert_eq "3" "$code" "an unaddressed bot thread refuses to post"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 assert_contains "$STUB_DIR/out" "pr-unaddressed.sh" "...and names the tool that lists them"
 
 # 8. Paired control for 7: the only difference is that the thread has our reply.
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$FINDINGS"
-code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
+code="$(run_gate 42 --lessons "L-0082: a takeaway must not buy a pass past an unread finding")"
 assert_eq "0" "$code" "the same PR posts once that thread has our reply"
 assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
 
 # 9. A failed comments fetch is unknown, not zero.
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "[]" fail
-code="$(run_gate 42 --ack-suppressed --lessons "stated")"
+code="$(run_gate 42 --ack-suppressed --lessons "none new: stated")"
 assert_eq "3" "$code" "a failed comments fetch refuses to post (unknown is not zero)"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
@@ -105,30 +126,30 @@ assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 CLEAN="printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'"
 make_gh_stub "$CLEAN"
 ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"},{"name":"e2e / e2e","conclusion":"SUCCESS","startedAt":"2026-10-10T17:01:00Z"}]}'
-code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
 assert_eq "0" "$code" "a ready PR whose e2e ran after its draft-era skip posts"
 assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
 
 # 11. Paired control for 10: the draft-era skip alone still refuses.
 ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"}]}'
-code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
 assert_eq "3" "$code" "a ready PR with only the draft-era e2e skip refuses"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
 # 12. A skip of the reusable run itself is a skip too.
 ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e / e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T17:01:00Z"}]}'
-code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
 assert_eq "3" "$code" "a skipped 'e2e / e2e' refuses"
 
 # 13. No e2e at all on a ready PR is missing, not fine.
 ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"gate","conclusion":"SUCCESS","startedAt":"2026-10-10T17:01:00Z"}]}'
-code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
 assert_eq "3" "$code" "a ready PR with no e2e check refuses"
 
 # 14. A run queued on ready_for_review has no start time yet; it is still newer than the draft skip.
 for unset_start in 'null' '"0001-01-01T00:00:00Z"'; do
   ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"},{"name":"e2e / e2e","conclusion":"","status":"QUEUED","startedAt":'"$unset_start"'}]}'
-  code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "stated")"
+  code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
   assert_eq "0" "$code" "a queued e2e run (startedAt $unset_start) outranks the draft-era skip"
 done
 

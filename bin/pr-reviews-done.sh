@@ -19,6 +19,8 @@
 # deciding what testing-strategy or test change keeps that bug class from recurring — posted as a
 # "Testing takeaways" section. "None new" is a valid takeaway, but it must be said explicitly
 # (e.g. --lessons "none new: both findings are the counts-vs-records class CLAUDE.md already owns").
+# Otherwise the takeaway must cite the lesson it was recorded as (L-NNNN, written with the lessons MCP
+# server's add_lesson / add_origin tools); every cited id is checked against the lessons repo's main.
 set -euo pipefail
 
 # Flags are stripped before positional parsing so `--ack-suppressed` / `--lessons` can be passed
@@ -126,6 +128,42 @@ if { [ "$findings_n" = "?" ] || [ "${findings_n:-0}" -gt 0 ]; } && [ -z "$LESSON
   exit 3
 fi
 
+# A takeaway that names no lesson stays in this one PR comment and is lost; the lessons repo is what later
+# sweeps read. Cited ids are looked up on its main, failing closed like the other gates (a regex alone
+# would accept an id that was never written).
+LESSONS_REPO="${LESSONS_REPO:-hestiamediagroup/engineering-lessons}"
+LESSONS_PATH="plugins/engineering-lessons/skills/lessons/lessons"
+lesson_links=""
+if [ -n "$LESSONS" ]; then
+  cited="$(printf '%s' "$LESSONS" | grep -oE 'L-[0-9]{4}' | sort -u || true)"
+  if [ -z "$cited" ]; then
+    if ! printf '%s' "$LESSONS" | grep -qiE 'none new: *[^ ]'; then
+      echo "Refusing to post: the takeaway cites no lesson id and is not 'none new: <why>'." >&2
+      echo "Record it in the shared lessons first, with the lessons MCP server's tools (plugin" >&2
+      echo "engineering-lessons): search_lessons for an existing rule, then add_origin (it happened again)" >&2
+      echo "or add_lesson (new bug class). Re-run citing the id they return:" >&2
+      echo "  bin/pr-reviews-done.sh $PR --lessons \"L-NNNN: <what changes in the tests/strategy>\"" >&2
+      exit 3
+    fi
+  else
+    if ! names="$(gh api "repos/$LESSONS_REPO/contents/$LESSONS_PATH?ref=main" --jq '.[].name' 2>/dev/null)" || [ -z "$names" ]; then
+      echo "Refusing to post: could not list lessons on $LESSONS_REPO main, so the cited ids are UNVERIFIED." >&2
+      echo "A failed lookup is not proof they exist. Retry once the API answers (this needs gh access to" >&2
+      echo "$LESSONS_REPO)." >&2
+      exit 3
+    fi
+    for id in $cited; do
+      file="$(printf '%s\n' "$names" | grep -E "^${id}-.*\.md$" | head -1 || true)"
+      if [ -z "$file" ]; then
+        echo "Refusing to post: $id is not on $LESSONS_REPO main. Cite the id add_lesson / add_origin returned" >&2
+        echo "after it merged, not one you expect it to get." >&2
+        exit 3
+      fi
+      lesson_links="${lesson_links}${lesson_links:+, }[${id}](https://github.com/${LESSONS_REPO}/blob/main/${LESSONS_PATH}/${file})"
+    done
+  fi
+fi
+
 # A check that skips on draft PRs must actually have RUN on a PR that is ready to merge. GitHub
 # counts a skipped job as satisfying a required check — so a PR marked ready right after its final
 # push can carry a draft-era SKIP straight through branch protection with the check never having
@@ -194,6 +232,10 @@ if [ -n "$LESSONS" ]; then
   body="${body}
 
 **Testing takeaways:** ${LESSONS}"
+  if [ -n "$lesson_links" ]; then
+    body="${body}
+Recorded in engineering-lessons: ${lesson_links}"
+  fi
 fi
 if [ -n "$NOTE" ]; then
   body="${body}
