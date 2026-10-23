@@ -68,6 +68,12 @@ code="$(run "$BIN/await-codex-review.sh" 42)"
 assert_eq "2" "$code" "a failed comments fetch after a completed review exits 2"
 assert_not_contains "$STUB_DIR/out" "filed no findings" "...and does not report the review as clean"
 
+# Suppressed findings live only in review bodies, so a failed reviews fetch must not read as clean either.
+stub pull_comments "[$OLD_FINDING]"; stub reviews FAIL
+code="$(run "$BIN/await-codex-review.sh" 42)"
+assert_eq "2" "$code" "a failed reviews fetch after a completed review exits 2"
+assert_not_contains "$STUB_DIR/out" "filed no findings" "...and does not report the review as clean"
+
 echo "await-copilot-review:"
 
 stub reviews '[{"id":7,"user":{"login":"copilot-pull-request-reviewer[bot]"},"commit_id":"HEAD1","body":"summary"}]'
