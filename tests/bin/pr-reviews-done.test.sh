@@ -102,6 +102,19 @@ assert_eq "3" "$code" "an over-long id refuses instead of matching L-0082"
 assert_contains "$STUB_DIR/out" "L-00820" "...and names the malformed id"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
+# 6c3. A malformed citation must refuse whole, not be truncated to a valid prefix or dropped (Codex, dollyVision #262).
+for bad in "L-0082oops: a typo" "L-0082 and L-bogus: two classes" "L-0082-redirects: a filename" "L-NNNN: placeholder left in"; do
+  code="$(run_gate 42 --lessons "$bad")"
+  assert_eq "3" "$code" "a malformed citation refuses: $bad"
+  assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
+done
+code="$(run_gate 42 --lessons "URL-safe slugs; per L-0082.")"
+assert_eq "0" "$code" "an L- inside another word is not a citation, and a sentence-ending id still verifies"
+code="$(run_gate 42 --lessons "L-0082: a bare L- in prose names no lesson")"
+assert_eq "0" "$code" "a bare L- is prose, not a malformed id"
+code="$(run_gate 42 --lessons "CALL-410 regression; L-0082: a ticket key is not a lesson id")"
+assert_eq "0" "$code" "a ticket key beside a real id posts"
+
 # 6d. A failed lessons lookup is unverified, not fine.
 code="$(LESSONS_LIST=fail run_gate 42 --lessons "L-0082: a class")"
 assert_eq "3" "$code" "a failed lessons lookup refuses (fail closed)"

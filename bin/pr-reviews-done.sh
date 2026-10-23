@@ -132,7 +132,8 @@ LESSONS_REPO="${LESSONS_REPO:-hestiamediagroup/engineering-lessons}"
 LESSONS_PATH="plugins/engineering-lessons/skills/lessons/lessons"
 lesson_links=""
 if [ -n "$LESSONS" ]; then
-  cited="$(printf '%s' "$LESSONS" | grep -oE 'L-[0-9]+' | sort -u || true)"
+  # Whole tokens at a word boundary: a typo like L-0082oops must refuse, not verify as L-0082; CALL-410 is a ticket.
+  cited="$(printf '%s' "$LESSONS" | grep -oE '(^|[^[:alnum:]_-])L-[[:alnum:]_-]+' | sed -E 's/^[^L]//' | sort -u || true)"
   malformed="$(printf '%s\n' "$cited" | grep -vE '^(L-[0-9]{4})?$' || true)"
   if [ -n "$malformed" ]; then
     echo "Refusing to post: malformed lesson id(s): $(printf '%s' "$malformed" | tr '\n' ' ')- ids are exactly L- plus four digits." >&2
