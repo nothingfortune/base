@@ -65,7 +65,7 @@ print_review() {
   # A failed fetch must not print the review as having no inline findings.
   if ! raw="$(gh api --paginate "repos/$REPO/pulls/$PR/comments" 2>/dev/null)" \
     || ! comments="$(printf '%s' "$raw" | jq -s "add // [] | [.[] | select(($MATCH) and (.pull_request_review_id == $review_id))]")"; then
-    echo "await-copilot-review: Copilot reviewed PR #$PR, but its inline comments could not be fetched. Retry." >&2
+    echo "await-copilot-review: Copilot reviewed PR #$PR, but its inline comments could not be fetched or parsed. Retry." >&2
     exit 2
   fi
   count="$(printf '%s' "$comments" | jq 'length')"

@@ -55,7 +55,7 @@ done
 if ! raw="$(gh api --paginate "repos/$REPO/pulls/$PR/comments" 2>/dev/null)" \
   || ! comments="$(printf '%s' "$raw" | jq -s --arg head "$HEAD" \
     'add // [] | [.[] | select(((.user.login // "") | test("codex"; "i")) and (.in_reply_to_id == null) and ((.original_commit_id // .commit_id) == $head))]')"; then
-  echo "await-codex-review: Codex reviewed ${HEAD:0:7}, but its comments could not be fetched. Retry." >&2
+  echo "await-codex-review: Codex reviewed ${HEAD:0:7}, but its comments could not be fetched or parsed. Retry." >&2
   exit 2
 fi
 count="$(printf '%s' "$comments" | jq 'length')"
@@ -63,7 +63,7 @@ count="$(printf '%s' "$comments" | jq 'length')"
 # Review bodies too: a finding in a collapsed "Suppressed comments" block never reaches the comments API.
 if ! rawreviews="$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" 2>/dev/null)" \
   || ! headreviews="$(printf '%s' "$rawreviews" | jq -s --arg head "$HEAD" 'add // [] | [.[] | select(.commit_id == $head)]')"; then
-  echo "await-codex-review: Codex reviewed ${HEAD:0:7}, but its reviews could not be fetched. Retry." >&2
+  echo "await-codex-review: Codex reviewed ${HEAD:0:7}, but its reviews could not be fetched or parsed. Retry." >&2
   exit 2
 fi
 suppressed="$(printf '%s' "$headreviews" | suppressed_findings "codex")"

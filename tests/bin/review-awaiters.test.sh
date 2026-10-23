@@ -94,6 +94,17 @@ assert_not_contains "$STUB_DIR/out" "stale suppressed" "...and not an earlier he
 assert_not_contains "$STUB_DIR/out" "filed no findings" "...and does not report the review as clean"
 stub reviews '[]'
 
+# A successful fetch of malformed data is as unreadable as a failed fetch.
+stub pull_comments 'not json'; stub reviews '[]'
+code="$(run "$BIN/await-codex-review.sh" 42)"
+assert_eq "2" "$code" "malformed comments after a completed review exit 2"
+assert_not_contains "$STUB_DIR/out" "filed no findings" "...and do not report the review as clean"
+stub pull_comments "[$OLD_FINDING]"; stub reviews 'not json'
+code="$(run "$BIN/await-codex-review.sh" 42)"
+assert_eq "2" "$code" "malformed reviews after a completed review exit 2"
+assert_not_contains "$STUB_DIR/out" "filed no findings" "...and do not report the review as clean"
+stub reviews '[]'
+
 # Suppressed findings live only in review bodies, so a failed reviews fetch must not read as clean either.
 stub pull_comments "[$OLD_FINDING]"; stub reviews FAIL
 code="$(run "$BIN/await-codex-review.sh" 42)"
@@ -107,6 +118,11 @@ stub pull_comments '[{"id":8,"in_reply_to_id":null,"pull_request_review_id":7,"u
 code="$(run "$BIN/await-copilot-review.sh" 42)"
 assert_eq "0" "$code" "a Copilot review of the head returns"
 assert_contains "$STUB_DIR/out" "copilot finding" "...and prints its inline finding, even beside a deleted author's comment"
+
+stub pull_comments 'not json'
+code="$(run "$BIN/await-copilot-review.sh" 42)"
+assert_eq "2" "$code" "malformed inline comments from a successful fetch exit 2"
+assert_not_contains "$STUB_DIR/out" "copilot finding" "...and print no findings as if read"
 
 stub pull_comments FAIL
 code="$(run "$BIN/await-copilot-review.sh" 42)"
