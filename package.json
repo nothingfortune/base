@@ -21,8 +21,11 @@
     "tokens": "node scripts/design-tokens.mjs",
     "design:check": "node scripts/design-tokens.mjs --check",
     "integrity": "integrity check",
-    "check": "npm run typecheck && npm run lint && npm run comment-density && npm run integrity && npm run format:check && npm run test:coverage && npm run coverage:drift && npm run test:bin && npm run docs:check && npm run design:check",
+    "check": "npm run typecheck && npm run lint && npm run comment-density && npm run integrity && npm run format:check && npm run test:coverage && npm run coverage:drift && npm run test:bin && npm run lint:fail-open && npm run test:defects && npm run test:git-isolation && npm run docs:check && npm run design:check",
     "test:bin": "bash tests/bin/run.sh",
+    "lint:fail-open": "bash bin/fail-open-lint.sh",
+    "test:defects": "bash bin/planted-defects.sh",
+    "test:git-isolation": "bash bin/git-isolation-check.sh",
     "postinstall": "git config core.hooksPath >/dev/null 2>&1 || git config core.hooksPath .githooks || true",
     "test:mutation": "stryker run"
   },

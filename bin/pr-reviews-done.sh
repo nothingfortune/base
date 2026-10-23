@@ -206,13 +206,17 @@ fi
 # "green" only when at least one check is reported AND none are failing/cancelled/pending —
 # an empty or errored rollup ("no checks reported yet", API/auth failure) must NOT read as
 # merge-ready. skipping counts as ok (e.g. real-WP e2e skips on docs-only PRs).
-buckets="$(gh pr checks "$PR" --json bucket -q '.[].bucket' 2>/dev/null || true)"
+# gh pr checks exits non-zero for failing or pending checks too, so only an empty answer means the read failed.
+ci_unread=""
+if ! buckets="$(gh pr checks "$PR" --json bucket -q '.[].bucket' 2>/dev/null)" && [ -z "$buckets" ]; then ci_unread=1; fi
 total="$(  printf '%s\n' "$buckets" | grep -c .          || true)"
 blocked="$(printf '%s\n' "$buckets" | grep -cxE 'fail|cancel' || true)"
 pending="$(printf '%s\n' "$buckets" | grep -cx  'pending'     || true)"
 
 # Every thread is answered past the gates above, so the verdict is about CI only.
-if [ "${total:-0}" -eq 0 ]; then
+if [ -n "$ci_unread" ]; then
+  verdict="Reviews processed, but **CI state could not be read** — verify CI is green before merging."
+elif [ "${total:-0}" -eq 0 ]; then
   verdict="Reviews processed. **No CI checks reported yet** — verify CI is green before merging."
 elif [ "${blocked:-0}" -gt 0 ]; then
   verdict="Reviews processed, but **${blocked} CI check(s) failing/cancelled** — not ready to merge yet."

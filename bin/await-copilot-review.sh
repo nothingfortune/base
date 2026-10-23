@@ -102,8 +102,11 @@ deadline=$(( $(date +%s) + WAIT ))
 while :; do
   # --paginate + `jq -s add`: reviews default to 30/page, so a newer review of the current head
   # can land on a later page on long-lived PRs. Merge all pages before selecting the latest.
-  review="$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" 2>/dev/null \
-    | jq -s "add // [] | [.[] | select($SELECT)] | last" 2>/dev/null || echo 'null')"
+  # While polling an unreadable reviews list is "not yet"; the timeout branch reports a failed read.
+  if ! review="$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" 2>/dev/null \
+    | jq -s "add // [] | [.[] | select($SELECT)] | last" 2>/dev/null)"; then
+    review="null"
+  fi
 
   if [ -n "$review" ] && [ "$review" != "null" ]; then
     print_review "$review"
@@ -113,8 +116,11 @@ while :; do
   if [ "$(date +%s)" -ge "$deadline" ]; then
     # Timed out waiting for a review of the current head — fall back to the latest Copilot
     # review of ANY commit, so a re-review that targeted an earlier push isn't hidden.
-    review="$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" 2>/dev/null \
-      | jq -s "add // [] | [.[] | select($MATCH)] | last" 2>/dev/null || echo 'null')"
+    if ! review="$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" 2>/dev/null \
+      | jq -s "add // [] | [.[] | select($MATCH)] | last")"; then
+      echo "await-copilot-review: the reviews of PR #$PR could not be read, so whether Copilot reviewed is UNKNOWN. Retry." >&2
+      exit 2
+    fi
     if [ -n "$review" ] && [ "$review" != "null" ]; then
       echo "(No Copilot review of the current commit after ${WAIT}s — showing the most recent one.)"
       print_review "$review"

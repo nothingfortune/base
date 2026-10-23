@@ -39,8 +39,10 @@ fi
 deadline=$(( $(date +%s) + WAIT ))
 while :; do
   # A failed state fetch is "not yet known", so keep polling rather than claim a result.
-  state="$(gh api --paginate "repos/$REPO/issues/$PR/comments" 2>/dev/null \
-    | jq -s 'add // []' 2>/dev/null | codex_review_state "$HEAD" 2>/dev/null || echo pending)"
+  if ! state="$(gh api --paginate "repos/$REPO/issues/$PR/comments" 2>/dev/null \
+    | jq -s 'add // []' 2>/dev/null | codex_review_state "$HEAD" 2>/dev/null)"; then
+    state="pending"
+  fi
   if [ "$state" = "completed" ]; then break; fi
   if [ "$(date +%s)" -ge "$deadline" ]; then
     echo "No completed Codex review of $REPO PR #$PR head ${HEAD:0:7} after ${WAIT}s."
