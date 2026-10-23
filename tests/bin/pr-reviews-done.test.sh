@@ -95,6 +95,13 @@ code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread fin
 assert_eq "3" "$code" "a user:null comment does not hide an unaddressed thread"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
+# 7c. Comments that arrive but cannot be parsed are unknown, not "0 unaddressed".
+make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "not json"
+code="$(run_gate 42 --ack-suppressed --lessons "a takeaway must not buy a pass past an unread finding")"
+assert_eq "3" "$code" "unparseable review comments refuse to post"
+assert_contains "$STUB_DIR/out" "UNKNOWN" "...and say the threads are unknown"
+assert_not_contains "$STUB_DIR/out" "POSTED" "...and post nothing"
+
 # 8. Paired control for 7: the only difference is that the thread has our reply.
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$FINDINGS"
 code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"

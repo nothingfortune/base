@@ -13,7 +13,7 @@ cat > "$STUB_DIR/gh" <<'EOF'
 answer() { [ "$(cat "$STUB/$1")" = "FAIL" ] && exit 1; cat "$STUB/$1"; }
 case "$*" in
   *"repo view"*)                 echo "acme/widgets" ;;
-  *"pr view"*)                   echo "HEAD1" ;;
+  *"pr view"*)                   [ -f "$STUB/head" ] && answer head || echo "HEAD1" ;;
   *"issues/"*"/comments"*)       answer issue_comments ;;
   *"pulls/"*"/comments"*)        answer pull_comments ;;
   *"pulls/"*"/reviews"*)         answer reviews ;;
@@ -67,6 +67,20 @@ stub pull_comments FAIL
 code="$(run "$BIN/await-codex-review.sh" 42)"
 assert_eq "2" "$code" "a failed comments fetch after a completed review exits 2"
 assert_not_contains "$STUB_DIR/out" "filed no findings" "...and does not report the review as clean"
+
+# An unreadable head cannot be matched to a review, so it is an error, not a wait.
+stub head FAIL
+code="$(run "$BIN/await-codex-review.sh" 42)"
+assert_eq "2" "$code" "a failed head lookup exits 2"
+rm -f "$STUB_DIR/head"
+
+# A failed state fetch is "not yet known": the waiter must time out as unreviewed, never print findings as done.
+stub issue_comments FAIL; stub pull_comments "[$HEAD_FINDING]"
+code="$(run "$BIN/await-codex-review.sh" 42)"
+assert_eq "0" "$code" "a failed state fetch times out cleanly"
+assert_contains "$STUB_DIR/out" "No completed Codex review" "...and says the head is not reviewed yet"
+assert_not_contains "$STUB_DIR/out" "fresh finding" "...and does not treat the review as done"
+stub issue_comments "$STATE_HEAD1"
 
 # Suppressed findings live only in review bodies, so a failed reviews fetch must not read as clean either.
 stub pull_comments "[$OLD_FINDING]"; stub reviews FAIL
