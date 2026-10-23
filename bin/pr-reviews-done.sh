@@ -19,8 +19,7 @@
 # deciding what testing-strategy or test change keeps that bug class from recurring — posted as a
 # "Testing takeaways" section. "None new" is a valid takeaway, but it must be said explicitly
 # (e.g. --lessons "none new: both findings are the counts-vs-records class CLAUDE.md already owns").
-# Otherwise the takeaway must cite the lesson it was recorded as (L-NNNN, written with the lessons MCP
-# server's add_lesson / add_origin tools); every cited id is checked against the lessons repo's main.
+# Otherwise it must cite the L-NNNN that the lessons MCP add_lesson/add_origin returned (checked on the lessons repo's main).
 set -euo pipefail
 
 # Flags are stripped before positional parsing so `--ack-suppressed` / `--lessons` can be passed
@@ -128,9 +127,7 @@ if { [ "$findings_n" = "?" ] || [ "${findings_n:-0}" -gt 0 ]; } && [ -z "$LESSON
   exit 3
 fi
 
-# A takeaway that names no lesson stays in this one PR comment and is lost; the lessons repo is what later
-# sweeps read. Cited ids are looked up on its main, failing closed like the other gates (a regex alone
-# would accept an id that was never written).
+# Uncited takeaways die in this PR comment; ids are looked up (fail closed) because a regex accepts unwritten ones.
 LESSONS_REPO="${LESSONS_REPO:-hestiamediagroup/engineering-lessons}"
 LESSONS_PATH="plugins/engineering-lessons/skills/lessons/lessons"
 lesson_links=""
