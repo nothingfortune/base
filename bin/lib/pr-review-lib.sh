@@ -28,10 +28,12 @@ PR_REVIEW_BOTS="${PR_REVIEW_BOTS:-codex|copilot}"
 # Reads the comments JSON array on STDIN. Emits one TAB-separated line per
 # unaddressed thread: "<comment_id>\t<path>:<line>\t@<login>\t<80-char snippet>".
 # Emits nothing (and the caller sees empty output) when every bot thread has our reply.
+# Returns non-zero on unparseable input, so callers must not read a failure as "all replied".
 unaddressed_bot_threads() {
   local bots="${1:-$PR_REVIEW_BOTS}"
+  # Coalesce logins to "": a deleted account's comment has `user: null`, and test() on null aborts jq.
   jq -r --arg bots "$bots" '
-    def is_bot: (.user.login | test($bots; "i"));
+    def is_bot: ((.user.login // "") | test($bots; "i"));
     . as $all
     | ($all | map(select(.in_reply_to_id != null))) as $replies
     | $all
@@ -67,7 +69,7 @@ suppressed_findings() {
   local bots="${1:-$PR_REVIEW_BOTS}"
   # \u0001 marks the start of each bot review body so awk can attribute findings to a login.
   jq -r --arg bots "$bots" '
-    .[] | select(.user.login | test($bots; "i"))
+    .[] | select((.user.login // "") | test($bots; "i"))
     | "\u0001\(.user.login)", (.body // "")
   ' 2>/dev/null | awk '
     { sub(/\r$/, "") }
@@ -83,6 +85,21 @@ suppressed_findings() {
       printf "%s\t@%s\t%s\n", pending, login, substr(text, 1, 160)
       pending = ""
     }
+  '
+}
+
+# codex_review_state <head-sha>
+# Reads a PR's ISSUE comments JSON array on STDIN and prints "completed" when the latest
+# codex-review-state:v1 marker names <head-sha> with status completed, else "pending".
+# A clean Codex review leaves no inline comment, so this marker is the only completion signal.
+codex_review_state() {
+  local head="${1:?codex_review_state: head sha required}"
+  jq -r --arg head "$head" '
+    [ .[] | select((.user.login // "") | test("codex"; "i"))
+      | (.body // "") | capture("codex-review-state:v1 (?<j>\\{.*\\}) -->")? | .j | fromjson? ]
+    | last
+    | if (.code_review.commit_sha // "") == $head and (.code_review.status // "") == "completed"
+      then "completed" else "pending" end
   '
 }
 

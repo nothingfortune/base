@@ -193,6 +193,9 @@ AI reviewers (Codex + GitHub Copilot) review PRs. The loop, in order:
    request (Copilot only; Codex cannot be requested) and poll for reviews.
    Both print inline findings **and** findings hidden in collapsed
    "Suppressed comments" blocks, which never appear in the comments API.
+   The Codex one waits until Codex's `codex-review-state:v1` marker names the
+   current head as completed and prints only that head's findings; after a
+   push, comment `@codex review` first. Both exit 2 on a failed fetch.
 2. Address every finding; reply in each thread
    (`gh api repos/<repo>/pulls/<pr>/comments/<id>/replies -f body=...`).
    For each finding's bug class, `search_lessons`, then `add_origin` to the

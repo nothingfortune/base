@@ -23,7 +23,7 @@
 #
 # With no PR number, uses the PR for the current branch (gh pr view).
 # Exit 0 whether or not comments were found (a clean review is not an error);
-# exit 2 on usage/lookup failure.
+# exit 2 on usage/lookup failure or a failed fetch of the review's inline comments.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -43,7 +43,7 @@ fi
 
 # Copilot's login is "Copilot" on the comments API and "copilot-pull-request-reviewer[bot]"
 # on the reviews API — a case-insensitive substring match catches both.
-MATCH='.user.login | test("copilot"; "i")'
+MATCH='(.user.login // "") | test("copilot"; "i")'
 
 # Prefer a review OF THE CURRENT HEAD, so a re-run after a push waits for the fresh review
 # rather than returning a stale earlier one. Fall back to "any Copilot review" if the head
@@ -60,11 +60,15 @@ print_review() {
   # THIS review (by pull_request_review_id) — not every Copilot comment ever posted, so a stale
   # earlier review's comments don't surface under a fresh, clean summary. --paginate: the reviews
   # /comments lists default to 30 per page.
-  local review="$1" review_id comments count
+  local review="$1" review_id raw comments count
   review_id="$(printf '%s' "$review" | jq -r '.id // 0')"
-  comments="$(gh api --paginate "repos/$REPO/pulls/$PR/comments" 2>/dev/null \
-    | jq -s "add // [] | [.[] | select(($MATCH) and (.pull_request_review_id == $review_id))]" 2>/dev/null || echo '[]')"
-  count="$(printf '%s' "$comments" | jq 'length' 2>/dev/null || echo 0)"
+  # A failed fetch must not print the review as having no inline findings.
+  if ! raw="$(gh api --paginate "repos/$REPO/pulls/$PR/comments" 2>/dev/null)" \
+    || ! comments="$(printf '%s' "$raw" | jq -s "add // [] | [.[] | select(($MATCH) and (.pull_request_review_id == $review_id))]")"; then
+    echo "await-copilot-review: Copilot reviewed PR #$PR, but its inline comments could not be fetched or parsed. Retry." >&2
+    exit 2
+  fi
+  count="$(printf '%s' "$comments" | jq 'length')"
 
   # Findings Copilot filed inside a collapsed "Suppressed comments" block. These are in the review
   # BODY only — the comments API never returns them — so a tool that counts inline comments reports
