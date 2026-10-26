@@ -36,7 +36,7 @@ jobs:
   deploy:
     needs: configured
     if: needs.configured.outputs.ready == 'true'
-    uses: nothingfortune/workflows/.github/workflows/deploy-design-preview.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
+    uses: nothingfortune/workflows/.github/workflows/deploy-design-preview.yml@125089c3642893f0995161f7eaf16b45df8cf05b # v1.3.0
     with:
       path: docs/designs/suite
     # Explicit mapping: `inherit` is rejected for a required secret when the caller is in another org.

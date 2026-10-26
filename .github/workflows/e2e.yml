@@ -25,4 +25,4 @@ permissions:
 
 jobs:
   e2e:
-    uses: nothingfortune/workflows/.github/workflows/e2e.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
+    uses: nothingfortune/workflows/.github/workflows/e2e.yml@125089c3642893f0995161f7eaf16b45df8cf05b # v1.3.0

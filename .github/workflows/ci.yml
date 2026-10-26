@@ -24,7 +24,7 @@ permissions:
 jobs:
   # Shared classifier: doc_only is true, false or unknown; unknown runs the full gate below.
   scope:
-    uses: nothingfortune/workflows/.github/workflows/scope.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
+    uses: nothingfortune/workflows/.github/workflows/scope.yml@125089c3642893f0995161f7eaf16b45df8cf05b # v1.3.0
 
   # `!cancelled()` is load-bearing: it replaces the implicit success(needs)
   # so a FAILING scope job cannot skip the gate. Without it, scope failing
@@ -35,7 +35,7 @@ jobs:
   check:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.doc_only != 'true' }}
-    uses: nothingfortune/workflows/.github/workflows/ci.yml@aa7a3a0ecc927c178fc5f6df2727026234c1145c # v1.2.0
+    uses: nothingfortune/workflows/.github/workflows/ci.yml@125089c3642893f0995161f7eaf16b45df8cf05b # v1.3.0
 
   # The doc lane: what a prose change can actually break. Runs only when
   # check skips, so exactly one lane runs per change.
