@@ -167,9 +167,10 @@ review_request_needed() {
 pr_request_review() {
   local repo="$1" pr="$2" login="$3" pattern="$4" head state
   head="$(gh pr view "$pr" --repo "$repo" --json headRefOid -q .headRefOid 2>/dev/null || true)"
+  # fail-open-ok: an unknown request state degrades to requesting (see below): an extra request is noise, a skip is a lost review.
   state="$(gh api "repos/$repo/pulls/$pr" 2>/dev/null \
     | jq -c '{requested_reviewers, reviews: []}' 2>/dev/null || echo '{}')"
-  # Merge in the reviews list (a separate endpoint) so "already reviewed this head" counts.
+  # fail-open-ok: same degrade-to-request policy; merges the reviews list so "already reviewed this head" counts.
   state="$(jq -sc '.[0] * {reviews: (.[1] // [])}' \
     <(printf '%s' "$state") \
     <(gh api --paginate "repos/$repo/pulls/$pr/reviews" 2>/dev/null | jq -s 'add // []' 2>/dev/null || echo '[]') \

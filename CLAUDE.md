@@ -149,6 +149,10 @@ accompany bug fixes; mark incomplete implementations.
   `npm run test:e2e`. Everything else CI enforces must be reproducible via
   `check` — to add a check, add it to the `check` script, not as a bare
   workflow step.
+- Three gates enforce recurring engineering-lessons: `lint:fail-open`
+  (L-0029), `test:defects` (L-0040) and `test:git-isolation` (L-0103).
+  `docs/guides/quality-gates.md` ("Lesson enforcement") says how to satisfy
+  each. A lesson that keeps gaining origins is a candidate for the next gate.
 - Gates run against the BUILT artifact, never dev-server or stale local
   state: if the project gains a build, `check` runs it before typecheck and
   tests, and gate fixes are verified from a wiped-clean state (delete

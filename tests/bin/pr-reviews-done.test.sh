@@ -25,7 +25,7 @@ case "\$*" in
   *"pulls/"*"/reviews"*)  $1 ;;
   *"repo view"*)          echo "acme/widgets" ;;
   *"pulls/"*"/comments"*) $comments_cmd ;;
-  *"pr checks"*)          echo "pass" ;;
+  *"pr checks"*)          [ "\${PR_CHECKS:-}" = "fail" ] && exit 1; echo "pass" ;;
   *"pr view"*)            while [ \$# -gt 0 ]; do [ "\$1" = "--jq" ] && { jq -r "\$2" <<<"\${ROLLUP_JSON:-{\}}"; exit; }; shift; done ;;
   *"pr comment"*)         echo "POSTED: \$*" ;;
   *)                      echo "" ;;
@@ -43,12 +43,14 @@ echo "pr-reviews-done (gates):"
 make_gh_stub 'exit 1'
 code="$(run_gate 42)"
 assert_eq "3" "$code" "a failed reviews fetch refuses to post (exit 3)"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
 # 2. ...an explicit acknowledgement clears the suppressed-unknown gate, but findings are
 #    still UNKNOWN — so the lessons gate (fail-closed like the others) demands a takeaway.
 code="$(run_gate 42 --ack-suppressed)"
 assert_eq "3" "$code" "--ack-suppressed alone still refuses: unknown findings need a takeaway"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "lessons" "...and the refusal names the --lessons flag"
 code="$(run_gate 42 --ack-suppressed --lessons "read in browser; none new: API outage class")"
 assert_eq "0" "$code" "--ack-suppressed plus --lessons posts"
@@ -58,6 +60,7 @@ assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"<details>\\n<summary>Suppressed comments (1)</summary>\\n\\n**a/b.php:7**\\n* a hidden finding\\n</details>\"}]'"
 code="$(run_gate 42)"
 assert_eq "3" "$code" "known suppressed findings refuse to post"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "a/b.php:7" "...and name the finding so it can be acted on"
 
 # 4. Reviews fetch succeeds and is CLEAN → the gate must not block a normal merge, and no
@@ -73,6 +76,7 @@ FINDINGS='[{"id":1,"in_reply_to_id":null,"user":{"login":"chatgpt-codex-connecto
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$FINDINGS"
 code="$(run_gate 42)"
 assert_eq "3" "$code" "addressed findings without a takeaway refuse to post"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "lessons" "...and the refusal names the --lessons flag"
 
 # 6. The same PR posts once the takeaway is supplied, and the summary carries it.
@@ -85,20 +89,24 @@ assert_contains "$STUB_DIR/out" "engineering-lessons/blob/main/plugins/engineeri
 # 6b. A takeaway that is neither a lesson id nor 'none new: <why>' stays in this PR and is lost.
 code="$(run_gate 42 --lessons "strict calendar dates are now a Testing Rule")"
 assert_eq "3" "$code" "a takeaway citing no lesson refuses"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "add_lesson" "...and names the MCP tool that records it"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 code="$(run_gate 42 --lessons "none new:")"
 assert_eq "3" "$code" "'none new:' with no reason refuses"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 
 # 6c. A cited id must exist on the lessons repo's main.
 code="$(run_gate 42 --lessons "L-0082 and L-0999: two classes")"
 assert_eq "3" "$code" "an id missing from lessons main refuses"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "L-0999" "...and names the missing id"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
 # 6c2. An id with extra digits must not verify as its four-digit prefix (Codex, #37).
 code="$(run_gate 42 --lessons "L-00820: a nonexistent lesson")"
 assert_eq "3" "$code" "an over-long id refuses instead of matching L-0082"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "L-00820" "...and names the malformed id"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
@@ -106,6 +114,7 @@ assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 for bad in "L-0082oops: a typo" "L-0082 and L-bogus: two classes" "L-0082-redirects: a filename" "L-NNNN: placeholder left in"; do
   code="$(run_gate 42 --lessons "$bad")"
   assert_eq "3" "$code" "a malformed citation refuses: $bad"
+  assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
   assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 done
 code="$(run_gate 42 --lessons "URL-safe slugs; per L-0082.")"
@@ -115,9 +124,22 @@ assert_eq "0" "$code" "a bare L- is prose, not a malformed id"
 code="$(run_gate 42 --lessons "CALL-410 regression; L-0082: a ticket key is not a lesson id")"
 assert_eq "0" "$code" "a ticket key beside a real id posts"
 
+# 6f. No resolvable PR is a usage error, not a gate run.
+code="$(cd "$STUB_DIR" && PATH="$STUB_DIR:$PATH" bash "$SCRIPT" >"$STUB_DIR/out" 2>&1; echo $?)"
+assert_eq "2" "$code" "no PR number and none for the branch exits 2"
+assert_contains "$STUB_DIR/out" "usage:" "...with the usage line"
+assert_not_contains "$STUB_DIR/out" "Refusing to post" "...and runs no gate"
+
+# 6e. An unreadable CI rollup must not read as "no checks reported yet" (L-0029).
+code="$(PR_CHECKS=fail run_gate 42 --lessons "L-0082: a class")"
+assert_eq "0" "$code" "a failed CI read still posts the summary"
+assert_contains "$STUB_DIR/out" "CI state could not be read" "...and says CI was unreadable"
+assert_not_contains "$STUB_DIR/out" "No CI checks reported yet" "...not that no checks exist"
+
 # 6d. A failed lessons lookup is unverified, not fine.
 code="$(LESSONS_LIST=fail run_gate 42 --lessons "L-0082: a class")"
 assert_eq "3" "$code" "a failed lessons lookup refuses (fail closed)"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "UNVERIFIED" "...and says the ids are unverified"
 
 # 7. An unanswered bot thread refuses even with --lessons, so the lessons gate cannot mask it.
@@ -125,6 +147,7 @@ UNANSWERED='[{"id":1,"in_reply_to_id":null,"user":{"login":"chatgpt-codex-connec
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$UNANSWERED"
 code="$(run_gate 42 --lessons "L-0082: a takeaway must not buy a pass past an unread finding")"
 assert_eq "3" "$code" "an unaddressed bot thread refuses to post"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 assert_contains "$STUB_DIR/out" "pr-unaddressed.sh" "...and names the tool that lists them"
 
@@ -133,12 +156,14 @@ GHOST='[{"id":5,"in_reply_to_id":null,"user":null,"body":"ghost"},{"id":1,"in_re
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "$GHOST"
 code="$(run_gate 42 --lessons "a takeaway must not buy a pass past an unread finding")"
 assert_eq "3" "$code" "a user:null comment does not hide an unaddressed thread"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
 # 7c. Comments that arrive but cannot be parsed are unknown, not "0 unaddressed".
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "not json"
 code="$(run_gate 42 --ack-suppressed --lessons "a takeaway must not buy a pass past an unread finding")"
 assert_eq "3" "$code" "unparseable review comments refuse to post"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_contains "$STUB_DIR/out" "UNKNOWN" "...and say the threads are unknown"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and post nothing"
 
@@ -152,6 +177,7 @@ assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
 make_gh_stub "printf '%s' '[{\"user\":{\"login\":\"Copilot\"},\"body\":\"reviewed, no comments\"}]'" "[]" fail
 code="$(run_gate 42 --ack-suppressed --lessons "none new: stated")"
 assert_eq "3" "$code" "a failed comments fetch refuses to post (unknown is not zero)"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
 # 10. A reusable-workflow e2e reports as "e2e / e2e" once it runs, but its draft-era skip as plain
@@ -167,17 +193,20 @@ assert_contains "$STUB_DIR/out" "POSTED" "...and the summary is posted"
 ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T16:59:51Z"}]}'
 code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
 assert_eq "3" "$code" "a ready PR with only the draft-era e2e skip refuses"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 assert_not_contains "$STUB_DIR/out" "POSTED" "...and posts nothing"
 
 # 12. A skip of the reusable run itself is a skip too.
 ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"e2e / e2e","conclusion":"SKIPPED","startedAt":"2026-10-10T17:01:00Z"}]}'
 code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
 assert_eq "3" "$code" "a skipped 'e2e / e2e' refuses"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 
 # 13. No e2e at all on a ready PR is missing, not fine.
 ROLLUP_JSON='{"isDraft":false,"statusCheckRollup":[{"name":"gate","conclusion":"SUCCESS","startedAt":"2026-10-10T17:01:00Z"}]}'
 code="$(ROLLUP_JSON="$ROLLUP_JSON" DRAFT_SKIPPED_CHECK=e2e run_gate 42 --lessons "none new: stated")"
 assert_eq "3" "$code" "a ready PR with no e2e check refuses"
+assert_eq "1" "$(grep -c 'Refusing to post' "$STUB_DIR/out")" "...and exactly one gate refused"
 
 # 14. A run queued on ready_for_review has no start time yet; it is still newer than the draft skip.
 for unset_start in 'null' '"0001-01-01T00:00:00Z"'; do

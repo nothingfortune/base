@@ -280,6 +280,92 @@ Force-adding `probe.sql` to this repo made the suite fail naming it.
 **Origin:** `outerReach/bin/repo-hygiene.sh` gate E (#387/#389), which bans
 tracked dumps because a WordPress dump carries `wp_users`.
 
+## Lesson enforcement
+
+These three gates enforce the engineering-lessons that kept recurring across
+the fleet's review sweeps: L-0029, L-0040 and L-0103. Each had at least three
+recorded origins when it was promoted from a written lesson to a check.
+
+### Fail-open reads (L-0029)
+
+**Enforces:** `npm run lint:fail-open` (`bin/fail-open-lint.sh`, logic in
+`scripts/fail-open-lint.mjs`). In `bin/*.sh` and `bin/lib/*.sh`, a network
+read (`gh api`, `gh pr checks`, `curl`, `wget`) whose logical line ends in a
+silent fallback (`|| echo`, `|| true`, `|| printf`, `|| :`) fails the gate.
+Backslash-continued lines count as one line.
+
+**Why:** a fallback turns a failed read into an empty one. An empty list then
+reads as "no findings", "no review" or "no checks", and the gate built on it
+passes having checked nothing.
+
+**Updating:** handle the failure. Exit non-zero, report UNKNOWN, or branch with
+`if ! x="$(...)"; then` and say what the default means. When an unknown result
+is safe, such as polling (unknown means "not yet") or a degrade-to-request
+policy, mark the line, or the comment line above it, with
+`# fail-open-ok: <why>`. A marker with no reason does not count.
+
+**Proof:** `tests/bin/fail-open-lint.test.sh`. The lint found six sites in this
+repo. Two were bugs, both fixed with tests: an unreadable CI rollup posted "No
+CI checks reported yet", and an unreadable reviews list at the Copilot
+deadline printed "No Copilot review". The other four are polling or
+degrade-to-request paths and carry markers.
+
+### Planted defects (L-0040)
+
+**Enforces:** `npm run test:defects` (`bin/planted-defects.sh`, logic in
+`scripts/planted-defects.mjs`, manifest `tests/bin/planted-defects.json`).
+Every refusal (`exit N`, N > 0) in the review-loop scripts, and every
+hand-written semantic defect in the manifest, is planted one at a time in a
+throwaway copy of `bin/` and `tests/`. At least one mapped suite must then
+fail. The suites must pass unmodified first, or nothing is counted.
+
+**Why:** a guard nobody has seen fire is a claim, not a check. On base #38,
+four review rounds each found one more guard whose removal left every test
+green. Some tests asserted only "exit 3, nothing posted", so a later refusal
+masked the missing one. Refusal tests now also assert that exactly one gate
+refused.
+
+**Updating:** a new refusal in a listed script is covered automatically, so it
+needs a test. A new filter or parse step needs a `defects` entry: `find` (text
+that appears exactly once), `replace` and `why`. A `find` that no longer
+matches fails the gate as a stale manifest. A refusal no test can reach gets an
+`auto.skip` entry with its reason. To cover a new script, add it to
+`auto.files` and map it in `suites`.
+
+**Proof:** `tests/bin/planted-defects.test.sh` covers five cases against a
+fixture gate:
+
+- an untested refusal fails the gate, and the tested one is reported caught;
+- a skip with a reason passes;
+- a semantic defect the tests catch passes;
+- a stale `find` fails the gate;
+- a suite that already fails stops the run.
+
+On this repo, 42 defects are planted and all are caught.
+
+### Git isolation in tests (L-0103)
+
+**Enforces:** `npm run test:git-isolation` (`bin/git-isolation-check.sh`,
+logic in `scripts/git-isolation-check.mjs`). Every `tests/bin/*.test.sh`
+suite must source `_harness.sh`, which clears inherited `GIT_*` variables.
+Each suite is also run with `GIT_DIR`, `GIT_WORK_TREE` and `GIT_INDEX_FILE`
+exported to a sentinel repository. The gate fails if the suite then fails, or
+if the sentinel's bare flag, refs, local config or index change. This replaces
+the old single-suite tripwire `git-env-isolation.test.sh`.
+
+**Why:** a pre-push hook run from a linked worktree exports an absolute
+`GIT_DIR`, and that overrides `cd` and `git -C`. In two clones of this
+template, test fixtures that ran `git init`, `git config user.*` and
+`git add -A` in temp dirs wrote to the real repository instead. The result
+was `core.bare = true` and a fixture identity in both main checkouts.
+
+**Proof:** `tests/bin/git-isolation-check.test.sh` runs three fixture suites:
+
+- a clean suite passes;
+- a suite with exactly that leak fails, and the check names both the leak and
+  the missing harness;
+- a suite that is harmless but skips the harness fails the static rule.
+
 ## Design tokens
 
 **Enforces:** `npm run design:check` (`scripts/design-tokens.mjs --check`),

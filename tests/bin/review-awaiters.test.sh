@@ -13,6 +13,7 @@ cat > "$STUB_DIR/gh" <<'EOF'
 answer() { [ "$(cat "$STUB/$1")" = "FAIL" ] && exit 1; cat "$STUB/$1"; }
 case "$*" in
   *"repo view"*)                 echo "acme/widgets" ;;
+  *"pr view"*"number"*)          [ -f "$STUB/pr_number" ] && answer pr_number || echo 42 ;;
   *"pr view"*)                   [ -f "$STUB/head" ] && answer head || echo "HEAD1" ;;
   *"issues/"*"/comments"*)       answer issue_comments ;;
   *"pulls/"*"/comments"*)        answer pull_comments ;;
@@ -38,6 +39,11 @@ stub pull_comments '[{"id":9,"in_reply_to_id":null,"user":null,"body":"ghost"},{
 code="$(run "$BIN/pr-unaddressed.sh" 42)"
 assert_eq "1" "$code" "a user:null comment does not hide an unanswered thread"
 assert_contains "$STUB_DIR/out" "c.ts:3" "...and the unanswered thread is listed"
+
+stub pull_comments FAIL
+code="$(run "$BIN/pr-unaddressed.sh" 42)"
+assert_eq "2" "$code" "a failed comments fetch is an error, not 'all replied'"
+assert_contains "$STUB_DIR/out" "failed to fetch" "...and says the fetch failed"
 
 stub pull_comments 'not json'
 code="$(run "$BIN/pr-unaddressed.sh" 42)"
@@ -128,6 +134,25 @@ stub pull_comments FAIL
 code="$(run "$BIN/await-copilot-review.sh" 42)"
 assert_eq "2" "$code" "a failed inline-comments fetch exits 2"
 assert_not_contains "$STUB_DIR/out" "nothing to address" "...and does not report the review as clean"
+
+# At the deadline an unreadable reviews list is unknown, not "no Copilot review" (L-0029).
+stub reviews FAIL; stub pull_comments '[]'
+code="$(run "$BIN/await-copilot-review.sh" 42)"
+assert_eq "2" "$code" "an unreadable reviews list at the deadline exits 2"
+assert_not_contains "$STUB_DIR/out" "No Copilot review" "...and does not claim there is no review"
+assert_contains "$STUB_DIR/out" "UNKNOWN" "...and says the result is unknown"
+
+echo "usage (no resolvable PR):"
+
+# With no PR argument and none for the branch, each script stops at usage instead of running on an empty PR.
+stub pr_number ""
+for s in pr-unaddressed await-codex-review await-copilot-review; do
+  code="$(run "$BIN/$s.sh")"
+  assert_eq "2" "$code" "$s with no resolvable PR exits 2"
+  assert_contains "$STUB_DIR/out" "usage:" "...with the usage line"
+  assert_eq "1" "$(grep -c . "$STUB_DIR/out")" "...and nothing after it"
+done
+rm -f "$STUB_DIR/pr_number"
 
 rm -rf "$STUB_DIR"
 test_summary

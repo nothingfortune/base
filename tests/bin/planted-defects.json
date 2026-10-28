@@ -1,0 +1,145 @@
+{
+  "copy": ["bin", "tests"],
+  "suites": {
+    "bin/pr-reviews-done.sh": ["tests/bin/pr-reviews-done.test.sh"],
+    "bin/pr-unaddressed.sh": ["tests/bin/review-awaiters.test.sh"],
+    "bin/await-codex-review.sh": ["tests/bin/review-awaiters.test.sh"],
+    "bin/await-copilot-review.sh": ["tests/bin/review-awaiters.test.sh"],
+    "bin/lib/pr-review-lib.sh": [
+      "tests/bin/pr-reviews-done.test.sh",
+      "tests/bin/review-awaiters.test.sh",
+      "tests/bin/pr-review-lib.test.sh"
+    ]
+  },
+  "auto": {
+    "files": [
+      "bin/pr-reviews-done.sh",
+      "bin/pr-unaddressed.sh",
+      "bin/await-codex-review.sh",
+      "bin/await-copilot-review.sh"
+    ],
+    "skip": []
+  },
+  "defects": [
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "[.[] | select(.commit_id == $head)]",
+      "replace": "[.[] | select(false)]",
+      "why": "reviews head filter drops all"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "[.[] | select(.commit_id == $head)]",
+      "replace": "[.[]]",
+      "why": "reviews head filter keeps stale"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "and ((.original_commit_id // .commit_id) == $head)",
+      "replace": "",
+      "why": "comments head filter removed"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "and (.in_reply_to_id == null)",
+      "replace": "",
+      "why": "reply filter removed"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "if [ \"$count\" -eq 0 ] && [ \"$s_count\" -eq 0 ]; then",
+      "replace": "if true; then",
+      "why": "clean message always"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "if [ \"$state\" = \"completed\" ]; then break; fi",
+      "replace": "break",
+      "why": "no wait for completion"
+    },
+    {
+      "file": "bin/lib/pr-review-lib.sh",
+      "find": "    | last\n",
+      "replace": "    | first\n",
+      "why": "state: first marker not last"
+    },
+    {
+      "file": "bin/lib/pr-review-lib.sh",
+      "find": "[ .[] | select((.user.login // \"\") | test(\"codex\"; \"i\"))\n      | (.body",
+      "replace": "[ .[]\n      | (.body",
+      "why": "state: any author"
+    },
+    {
+      "file": "bin/lib/pr-review-lib.sh",
+      "find": "and (.code_review.status // \"\") == \"completed\"",
+      "replace": "",
+      "why": "state: ignores status"
+    },
+    {
+      "file": "bin/lib/pr-review-lib.sh",
+      "find": "def is_bot: ((.user.login // \"\") | test($bots; \"i\"));",
+      "replace": "def is_bot: (.user.login | test($bots; \"i\"));",
+      "why": "lib: null author aborts"
+    },
+    {
+      "file": "bin/lib/pr-review-lib.sh",
+      "find": ".[] | select((.user.login // \"\") | test($bots; \"i\"))",
+      "replace": ".[] | select(.user.login | test($bots; \"i\"))",
+      "why": "suppressed: null author aborts"
+    },
+    {
+      "file": "bin/await-copilot-review.sh",
+      "find": "MATCH='(.user.login // \"\") | test(\"copilot\"; \"i\")'",
+      "replace": "MATCH='.user.login | test(\"copilot\"; \"i\")'",
+      "why": "copilot: null author"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "$head))]')\"",
+      "replace": "$head))]' || echo '[]')\"",
+      "why": "codex comments parse falls back to []"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "select(.commit_id == $head)]')\"",
+      "replace": "select(.commit_id == $head)]' || echo '[]')\"",
+      "why": "codex reviews parse falls back to []"
+    },
+    {
+      "file": "bin/await-copilot-review.sh",
+      "find": "$review_id))]\")\"",
+      "replace": "$review_id))]\" || echo '[]')\"",
+      "why": "copilot comments parse falls back to []"
+    },
+    {
+      "file": "bin/pr-reviews-done.sh",
+      "find": "unaddressed_bot_threads)\"; then",
+      "replace": "unaddressed_bot_threads || true)\"; then",
+      "why": "reviews-done parse falls back"
+    },
+    {
+      "file": "bin/pr-unaddressed.sh",
+      "find": "unaddressed_bot_threads)\"; then",
+      "replace": "unaddressed_bot_threads || true)\"; then",
+      "why": "unaddressed parse falls back"
+    },
+    {
+      "file": "bin/pr-reviews-done.sh",
+      "find": "if [ -n \"$ci_unread\" ]; then",
+      "replace": "if false; then",
+      "why": "unreadable CI rollup reported as 'no checks yet'"
+    },
+    {
+      "file": "bin/await-copilot-review.sh",
+      "find": "| jq -s \"add // [] | [.[] | select($MATCH)] | last\")\"; then",
+      "replace": "| jq -s \"add // [] | [.[] | select($MATCH)] | last\" || echo null)\"; then",
+      "why": "unreadable reviews at the Copilot deadline reported as no review"
+    },
+    {
+      "file": "bin/await-codex-review.sh",
+      "find": "    state=\"pending\"\n",
+      "replace": "    state=\"completed\"\n",
+      "why": "failed Codex state fetch read as completed"
+    }
+  ]
+}
